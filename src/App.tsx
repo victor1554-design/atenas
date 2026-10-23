@@ -22,6 +22,9 @@ import { SouthAmericanClubBattleApp } from './components/soccer/SouthAmericanClu
 import { Cr7MessiBattleApp } from './components/soccer/Cr7MessiBattleApp';
 import { Sparkles } from 'lucide-react';
 
+// Only the latest printed rows are kept: older ones scroll off and are dropped (real-time only, no history)
+const MAX_VISIBLE_ROWS = 6;
+
 // Settings the OBS overlay (separate browser) must mirror from the panel
 const SHARED_SETTING_KEYS: (keyof StreamSettings)[] = ['tierTriggers', 'plotterSound', 'plotterVolume'];
 
@@ -189,7 +192,7 @@ export default function App() {
       colIndex: activeRowItems.length,
     };
 
-    setRecentDonors((prev) => [completedDonor, ...prev.slice(0, 25)]);
+    setRecentDonors((prev) => [completedDonor, ...prev.slice(0, 9)]);
 
     // 1. BIG GIFT (1 per row, covers half the paper + GOOT stamp)
     if (isBig) {
@@ -201,7 +204,7 @@ export default function App() {
           items: activeRowItems,
           maxItems: activeRowType === 'duo_row' ? 2 : 3,
         };
-        setCompletedRows((prev) => [flushedRow, ...prev]);
+        setCompletedRows((prev) => [flushedRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
       }
 
       // Add the big GOOT row
@@ -218,7 +221,7 @@ export default function App() {
         maxItems: 1,
       };
 
-      setCompletedRows((prev) => [bigRow, spacerRow, ...prev]);
+      setCompletedRows((prev) => [bigRow, spacerRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
       setActiveRowItems([]);
       setActiveRowType('trio_row');
       processNextInQueue();
@@ -241,7 +244,7 @@ export default function App() {
         maxItems: currentRowTargetMax,
       };
 
-      setCompletedRows((prev) => [newFullRow, ...prev]);
+      setCompletedRows((prev) => [newFullRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
       setActiveRowItems([]);
       setActiveRowType('trio_row'); // Next fresh row defaults to trio
     } else {

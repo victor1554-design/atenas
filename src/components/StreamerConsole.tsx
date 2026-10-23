@@ -306,9 +306,24 @@ export const StreamerConsole: React.FC<StreamerConsoleProps> = ({
         {activeTab === 'simulator' && (
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                Configuración de Escucha y Disparadores (4 Niveles)
-              </p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Configuración de Escucha y Disparadores (4 Niveles)
+                </p>
+                <button
+                  onClick={() =>
+                    onUpdateSettings({
+                      tierTriggers: { ...settings.tierTriggers },
+                      plotterSound: settings.plotterSound,
+                      plotterVolume: settings.plotterVolume,
+                    })
+                  }
+                  title="Reenvía esta configuración al servidor y al overlay de OBS"
+                  className="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-xs font-bold text-white"
+                >
+                  Forzar actualización
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 {TIER_CARDS.map((card) => {
                   const trigger = settings.tierTriggers[card.tier];

@@ -448,15 +448,17 @@ export const ContinuousPrinter: React.FC<ContinuousPrinterProps> = ({
                       <div key={col} className="relative flex flex-col items-center w-full">
                         {isActive ? (
                           <div className="relative flex flex-col items-center">
-                            <canvas
-                              ref={activeCanvasRef}
-                              width={itemSize}
-                              height={itemSize}
-                              className={`rounded-full shadow-md bg-slate-50 ${
-                                activeDonor.giftTier === 'donut' ? 'border-2 border-amber-400' : 'ring-2 ring-emerald-500'
-                              }`}
-                              style={{ width: itemSize, height: itemSize }}
-                            />
+                            <div className="flex items-center justify-center" style={{ height: 96 }}>
+                              <canvas
+                                ref={activeCanvasRef}
+                                width={itemSize}
+                                height={itemSize}
+                                className={`rounded-full shadow-md bg-slate-50 ${
+                                  activeDonor.giftTier === 'donut' ? 'border-2 border-amber-400' : 'ring-2 ring-emerald-500'
+                                }`}
+                                style={{ width: itemSize, height: itemSize }}
+                              />
+                            </div>
 
                             <div className="mt-1.5 text-center">
                               <div className="text-xs font-black text-slate-900 truncate max-w-[125px]">
@@ -470,14 +472,16 @@ export const ContinuousPrinter: React.FC<ContinuousPrinterProps> = ({
                           </div>
                         ) : existingItem ? (
                           <div className="flex flex-col items-center opacity-90">
-                            <img
-                              src={existingItem.drawnCanvasDataUrl || existingItem.avatarUrl}
-                              alt={existingItem.username}
-                              className={`rounded-full shadow-sm object-cover ${
-                                existingItem.giftTier === 'donut' ? 'border-2 border-amber-400' : 'border border-slate-300'
-                              }`}
-                              style={{ width: itemSize, height: itemSize }}
-                            />
+                            <div className="flex items-center justify-center" style={{ height: 96 }}>
+                              <img
+                                src={existingItem.drawnCanvasDataUrl || existingItem.avatarUrl}
+                                alt={existingItem.username}
+                                className={`rounded-full shadow-sm object-cover ${
+                                  existingItem.giftTier === 'donut' ? 'border-2 border-amber-400' : 'border border-slate-300'
+                                }`}
+                                style={{ width: itemSize, height: itemSize }}
+                              />
+                            </div>
                             <div className="text-xs font-black text-slate-800 mt-1.5 truncate max-w-[120px]">
                               @{existingItem.username}
                             </div>
@@ -599,7 +603,9 @@ export const ContinuousPrinter: React.FC<ContinuousPrinterProps> = ({
                         {row.items.map((item) => {
                           const itemSize = getSlotSize(item.giftTier);
                           return (
-                            <div key={item.id} className="flex flex-col items-center">
+                            <div key={item.id} className="flex flex-col items-center w-full">
+                              {/* Fixed-height box so medium and small circles share the same center line */}
+                              <div className="flex items-center justify-center" style={{ height: 96 }}>
                               <div className="relative">
                                 <img
                                   src={item.drawnCanvasDataUrl || item.avatarUrl}
@@ -626,6 +632,7 @@ export const ContinuousPrinter: React.FC<ContinuousPrinterProps> = ({
                                     🌸 Mini
                                   </span>
                                 )}
+                              </div>
                               </div>
                               <div className="mt-1 text-center">
                                 <div className="text-xs font-black text-slate-900 truncate max-w-[120px]">

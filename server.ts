@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 // @ts-ignore - tiktok-live-connector does not have official ts types
 import { TikTokLiveConnection, WebcastEvent } from 'tiktok-live-connector';
@@ -27,7 +28,16 @@ let liveState: TikTokLiveState = {
 let tiktokConnection: any = null;
 
 // Settings chosen in the panel that the OBS overlay must also use (print triggers, plotter sound)
+// Persisted to disk so a server restart does not fall back to the default triggers
+const SHARED_SETTINGS_FILE = path.join(__dirname, 'shared-settings.json');
 let sharedSettings: Record<string, any> = {};
+try {
+  if (fs.existsSync(SHARED_SETTINGS_FILE)) {
+    sharedSettings = JSON.parse(fs.readFileSync(SHARED_SETTINGS_FILE, 'utf-8'));
+  }
+} catch {
+  sharedSettings = {};
+}
 const sseClients: Response[] = [];
 
 // Broadcast an event to all connected SSE browser clients (console + OBS overlays)
@@ -175,6 +185,11 @@ async function startServer() {
 
   app.post('/api/shared-settings', (req: Request, res: Response) => {
     sharedSettings = { ...sharedSettings, ...(req.body || {}) };
+    try {
+      fs.writeFileSync(SHARED_SETTINGS_FILE, JSON.stringify(sharedSettings, null, 2));
+    } catch (err) {
+      console.error('No se pudo guardar shared-settings.json', err);
+    }
     broadcastSSE('shared-settings', sharedSettings);
     res.json({ success: true });
   });
