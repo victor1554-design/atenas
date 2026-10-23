@@ -1,7 +1,7 @@
 import React from 'react';
-import { Palette, Trophy, Flame, Radio, ExternalLink } from 'lucide-react';
+import { Palette, Trophy, Flame, Printer, ExternalLink } from 'lucide-react';
 
-export type ActiveAppId = 'printer' | 'soccer' | 'cr7';
+export type ActiveAppId = 'printer' | 'soccer' | 'cr7' | 'color_printer';
 
 interface AppSelectorProps {
   activeApp: ActiveAppId;
@@ -55,9 +55,21 @@ export const AppSelector: React.FC<AppSelectorProps> = ({
           >
             <Flame size={15} />
             <span>App 3: CR7 vs Messi</span>
+          </button>
+
+          <button
+            onClick={() => onSelectApp('color_printer')}
+            className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-200 whitespace-nowrap ${
+              activeApp === 'color_printer'
+                ? 'bg-amber-500 text-neutral-950 shadow-md'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+            }`}
+          >
+            <Printer size={15} />
+            <span>App 4: Impresora a Color</span>
             <span
               className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                activeApp === 'cr7' ? 'bg-neutral-950 text-amber-400' : 'bg-amber-500/20 text-amber-300'
+                activeApp === 'color_printer' ? 'bg-neutral-950 text-amber-400' : 'bg-fuchsia-500/20 text-fuchsia-300'
               }`}
             >
               NEW

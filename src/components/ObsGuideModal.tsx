@@ -21,7 +21,13 @@ export const ObsGuideModal: React.FC<ObsGuideModalProps> = ({
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const soccerUrl = `${origin}/?app=soccer&overlay=1`;
   const printerUrl = `${origin}/?app=printer&overlay=1`;
-  const currentUrl = selectedApp === 'soccer' ? soccerUrl : printerUrl;
+  const colorPrinterUrl = `${origin}/?app=color_printer&overlay=1`;
+  const currentUrl =
+    selectedApp === 'soccer'
+      ? soccerUrl
+      : selectedApp === 'color_printer'
+      ? colorPrinterUrl
+      : printerUrl;
 
   const copyUrl = () => {
     navigator.clipboard.writeText(currentUrl);
@@ -70,7 +76,18 @@ export const ObsGuideModal: React.FC<ObsGuideModalProps> = ({
             }`}
           >
             <Sparkles className="h-4 w-4" />
-            <span>Impresora de Fotos</span>
+            <span>App 1: Plotter</span>
+          </button>
+          <button
+            onClick={() => setSelectedApp('color_printer')}
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+              selectedApp === 'color_printer'
+                ? 'bg-fuchsia-500 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>App 4: Impresora Color</span>
           </button>
         </div>
 

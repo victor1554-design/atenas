@@ -7,6 +7,11 @@ import {
   TierTriggers,
   DEFAULT_TIER_TRIGGERS,
   TIER_PRIORITY,
+  ColorDonorItem,
+  ColorFrameTier,
+  ColorTierTriggers,
+  DEFAULT_COLOR_TIER_TRIGGERS,
+  COLOR_TIER_PRIORITY,
   findTikTokGift,
   triggerCaption,
 } from './types/tiktok';
@@ -14,19 +19,140 @@ import { PRESET_AVATARS } from './utils/avatarPresets';
 import { soundEngine } from './utils/audio';
 import { ContinuousPrinter, PaperRow, PrintedItem, PaperRowType } from './components/ContinuousPrinter';
 import { StreamerConsole } from './components/StreamerConsole';
+import { ColorPhotoPrinter } from './components/ColorPhotoPrinter';
+import { ColorPrinterConsole } from './components/ColorPrinterConsole';
 import { HeaderNav } from './components/HeaderNav';
 import { RulesModal } from './components/RulesModal';
 import { ObsGuideModal } from './components/ObsGuideModal';
 import { AppSelector, ActiveAppId } from './components/AppSelector';
 import { SouthAmericanClubBattleApp } from './components/soccer/SouthAmericanClubBattleApp';
 import { Cr7MessiBattleApp } from './components/soccer/Cr7MessiBattleApp';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Printer } from 'lucide-react';
 
 // Only the latest printed rows are kept: older ones scroll off and are dropped (real-time only, no history)
 const MAX_VISIBLE_ROWS = 6;
 
 // Settings the OBS overlay (separate browser) must mirror from the panel
-const SHARED_SETTING_KEYS: (keyof StreamSettings)[] = ['tierTriggers', 'plotterSound', 'plotterVolume'];
+const SHARED_SETTING_KEYS: (keyof StreamSettings)[] = [
+  'tierTriggers',
+  'colorTierTriggers',
+  'plotterSound',
+  'plotterVolume',
+];
+
+const INITIAL_WALL_ITEMS: ColorDonorItem[] = [
+  // Left 2x2 Grid (Slots 0..3): Exclusively Blanco y Negro (bw_follow)
+  {
+    id: 'wall_1',
+    username: 'alexis_c',
+    displayName: 'Alexis Carbajal',
+    avatarUrl: PRESET_AVATARS[1].dataUrl,
+    frameTier: 'bw_follow',
+    giftName: 'Seguir',
+    giftIcon: '➕',
+    coins: 0,
+    timestamp: Date.now() - 60000,
+    actionText: 'Siguiendo',
+  },
+  {
+    id: 'wall_2',
+    username: 'mariana_live',
+    displayName: 'MARIANA',
+    avatarUrl: PRESET_AVATARS[4].dataUrl,
+    frameTier: 'bw_follow',
+    giftName: 'Seguir',
+    giftIcon: '➕',
+    coins: 0,
+    timestamp: Date.now() - 55000,
+    actionText: 'Siguiendo',
+  },
+  {
+    id: 'wall_3',
+    username: 'carlos_bw',
+    displayName: 'Carlos M.',
+    avatarUrl: PRESET_AVATARS[2].dataUrl,
+    frameTier: 'bw_follow',
+    giftName: 'Seguir',
+    giftIcon: '➕',
+    coins: 0,
+    timestamp: Date.now() - 50000,
+    actionText: 'Siguiendo',
+  },
+  {
+    id: 'wall_4',
+    username: 'lucia_tk',
+    displayName: 'Lucía G.',
+    avatarUrl: PRESET_AVATARS[0].dataUrl,
+    frameTier: 'bw_follow',
+    giftName: 'Seguir',
+    giftIcon: '➕',
+    coins: 0,
+    timestamp: Date.now() - 45000,
+    actionText: 'Siguiendo',
+  },
+  // Right 2x2 Grid (Slots 4..7): Fixed positions for Rosa (4), Dorado (5), Esmeralda (6), Diamante (7)
+  {
+    id: 'wall_5',
+    username: 'denis_rose',
+    displayName: 'Denis 🍓',
+    avatarUrl: PRESET_AVATARS[0].dataUrl,
+    frameTier: 'color_rose',
+    giftName: 'Rosa',
+    giftIcon: '🌹',
+    coins: 1,
+    timestamp: Date.now() - 40000,
+    actionText: '🌹 con Rose',
+  },
+  {
+    id: 'wall_6',
+    username: 'antonio_hd',
+    displayName: 'Antonio El Hijo',
+    avatarUrl: PRESET_AVATARS[5].dataUrl,
+    frameTier: 'frame_gold',
+    giftName: 'Corazón coreano',
+    giftIcon: '🫰',
+    coins: 5,
+    timestamp: Date.now() - 35000,
+    actionText: '🫰 con Corazón (5)',
+  },
+  {
+    id: 'wall_7',
+    username: 'yeison_tc',
+    displayName: 'Yeison TC',
+    avatarUrl: PRESET_AVATARS[2].dataUrl,
+    frameTier: 'frame_emerald',
+    giftName: 'Collar de amistad',
+    giftIcon: '📿',
+    coins: 10,
+    timestamp: Date.now() - 30000,
+    actionText: '📿 con Collar (10)',
+  },
+  {
+    id: 'wall_8',
+    username: 'jeffrey_vip',
+    displayName: 'jeffrey',
+    avatarUrl: PRESET_AVATARS[3].dataUrl,
+    frameTier: 'frame_azure',
+    giftName: 'Rosquilla',
+    giftIcon: '🍩',
+    coins: 30,
+    timestamp: Date.now() - 25000,
+    actionText: '🍩 con Rosquilla',
+  },
+];
+
+const INITIAL_VIP_CENTER: ColorDonorItem = {
+  id: 'vip_init',
+  username: 'lowkey.v03',
+  displayName: 'lowkey.v03',
+  avatarUrl: PRESET_AVATARS[3].dataUrl,
+  frameTier: 'frame_mythic',
+  giftName: 'Corona',
+  giftIcon: '👑',
+  coins: 99,
+  timestamp: Date.now() - 120000,
+  actionText: '👑 con Corona VIP',
+};
 
 export default function App() {
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -34,6 +160,8 @@ export default function App() {
   const initialApp = (urlParams?.get('app') as ActiveAppId) || 'printer';
 
   const [activeApp, setActiveApp] = useState<ActiveAppId>(initialApp);
+  const activeAppRef = useRef<ActiveAppId>(activeApp);
+  activeAppRef.current = activeApp;
 
   const [settings, setSettings] = useState<StreamSettings>({
     tiktokUsername: 'amyhan_stream',
@@ -48,16 +176,28 @@ export default function App() {
     drawOnLikes: true,
     likesThreshold: 1,
     tierTriggers: DEFAULT_TIER_TRIGGERS,
+    colorTierTriggers: DEFAULT_COLOR_TIER_TRIGGERS,
     plotterSound: 'pencil',
     plotterVolume: 0.8,
   });
 
+  // ---------------- APP 1 STATE (Plotter Continuo) ----------------
   const [activeDrawing, setActiveDrawing] = useState<DonorItem | null>(null);
   const [activeRowItems, setActiveRowItems] = useState<PrintedItem[]>([]);
   const [activeRowType, setActiveRowType] = useState<PaperRowType>('trio_row');
   const [drawingQueue, setDrawingQueue] = useState<DonorItem[]>([]);
   const [completedRows, setCompletedRows] = useState<PaperRow[]>([]);
   const [recentDonors, setRecentDonors] = useState<DonorItem[]>([]);
+
+  // ---------------- APP 4 STATE (Impresora a Color 1 a 1) ----------------
+  const [colorActiveDonor, setColorActiveDonor] = useState<ColorDonorItem | null>(null);
+  const [colorQueue, setColorQueue] = useState<ColorDonorItem[]>([]);
+  const [colorPrintedCount, setColorPrintedCount] = useState<number>(1701);
+  const [colorWallItems, setColorWallItems] = useState<ColorDonorItem[]>(INITIAL_WALL_ITEMS);
+  const [colorVipItem, setColorVipItem] = useState<ColorDonorItem>(INITIAL_VIP_CENTER);
+  const [colorRecentDonors, setColorRecentDonors] = useState<ColorDonorItem[]>([]);
+
+  // ---------------- CONNECTION & SHARED STATE ----------------
   const [isTikTokConnected, setIsTikTokConnected] = useState<boolean>(false);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -66,8 +206,16 @@ export default function App() {
   const likeBuckets = useRef<
     Record<string, { count: number; avatarUrl: string; displayName: string; timer?: ReturnType<typeof setTimeout> }>
   >({});
+  const colorLikeBuckets = useRef<
+    Record<string, { count: number; avatarUrl: string; displayName: string; timer?: ReturnType<typeof setTimeout> }>
+  >({});
+
   const triggersRef = useRef<TierTriggers>(settings.tierTriggers);
   triggersRef.current = settings.tierTriggers;
+
+  const colorTriggers = settings.colorTierTriggers || DEFAULT_COLOR_TIER_TRIGGERS;
+  const colorTriggersRef = useRef<ColorTierTriggers>(colorTriggers);
+  colorTriggersRef.current = colorTriggers;
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState<boolean>(false);
   const [isObsGuideModalOpen, setIsObsGuideModalOpen] = useState<boolean>(false);
@@ -86,7 +234,6 @@ export default function App() {
       Object.entries(newSettings).filter(([key]) => SHARED_SETTING_KEYS.includes(key as keyof StreamSettings))
     );
     if (Object.keys(shared).length > 0) {
-      // Share with the OBS overlay, which runs in a separate browser
       fetch('/api/shared-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -105,7 +252,9 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  // Dispatch next item in queue when current drawing finishes
+  // ============================================================================
+  // APP 1 LOGIC: PLOTTER CONTINUO
+  // ============================================================================
   const processNextInQueue = useCallback((remainingItems: PrintedItem[] = []) => {
     setDrawingQueue((prevQueue) => {
       if (prevQueue.length === 0) {
@@ -125,7 +274,6 @@ export default function App() {
     });
   }, []);
 
-  // Keep activeRowType and row capacity strictly aligned when a medium donut or big gift starts drawing
   useEffect(() => {
     if (!activeDrawing) return;
     if (activeDrawing.giftTier === 'big_gift') {
@@ -156,7 +304,6 @@ export default function App() {
     }
   }, [activeDrawing, activeRowItems, activeRowType]);
 
-  // Handle incoming gift event (from simulator, TikTok or custom donor)
   const handleTriggerGift = useCallback(
     (
       tier: GiftTier,
@@ -196,7 +343,6 @@ export default function App() {
       };
 
       if (!activeDrawing) {
-        // If starting with medium donut or big gift, adjust activeRowType
         if (tier === 'big_gift') {
           setActiveRowType('big_goot_row');
         } else if (tier === 'donut') {
@@ -219,7 +365,6 @@ export default function App() {
         }
         setActiveDrawing(newDonor);
       } else {
-        // Priority Queue: Big gift jumps immediately to the front of the queue
         if (tier === 'big_gift') {
           setDrawingQueue((prev) => [newDonor, ...prev]);
         } else {
@@ -230,7 +375,6 @@ export default function App() {
     [activeDrawing, activeRowItems]
   );
 
-  // When 2.0s drawing completes at the active line under the pen
   const handleDrawingComplete = (completedDonor: DonorItem, finalDataUrl: string) => {
     const isBig = completedDonor.giftTier === 'big_gift';
     const isMed = completedDonor.giftTier === 'donut';
@@ -245,9 +389,7 @@ export default function App() {
 
     setRecentDonors((prev) => [completedDonor, ...prev.slice(0, 9)]);
 
-    // 1. BIG GIFT (1 per row, covers half the paper + GOOT stamp)
     if (isBig) {
-      // If there were any partial items at the top row, flush them down
       if (activeRowItems.length > 0) {
         const flushedRow: PaperRow = {
           id: `row_${Date.now()}_flush`,
@@ -258,7 +400,6 @@ export default function App() {
         setCompletedRows((prev) => [flushedRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
       }
 
-      // Add the big GOOT row
       const spacerRow: PaperRow = {
         id: `spacer_${Date.now()}`,
         type: 'blank_spacer',
@@ -279,14 +420,11 @@ export default function App() {
       return;
     }
 
-    // 2. MEDIUM DONUT OR SMALL (Hearts & Flowers)
     const updatedActiveItems = [...activeRowItems, newItem];
     const hasMedInRow = isMed || activeRowType === 'duo_row' || updatedActiveItems.some((i) => i.giftTier === 'donut');
     const currentRowTargetMax = hasMedInRow ? 2 : 3;
 
-    // CHECK: IS THE CURRENT ROW FULLY DRAWN?
     if (updatedActiveItems.length >= currentRowTargetMax) {
-      // The row has been FULLY drawn! Now it advances down the continuous roll!
       soundEngine.playPaperFeedSound();
 
       const newFullRow: PaperRow = {
@@ -298,11 +436,9 @@ export default function App() {
 
       setCompletedRows((prev) => [newFullRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
       setActiveRowItems([]);
-      setActiveRowType('trio_row'); // Next fresh row defaults to trio
+      setActiveRowType('trio_row');
       processNextInQueue([]);
     } else {
-      // THE ROW IS NOT FULL YET: IT STAYS RIGHT AT THE TOP ROW!
-      // Does not scroll down until all drawings in the row are complete!
       setActiveRowItems(updatedActiveItems);
       if (hasMedInRow) {
         setActiveRowType('duo_row');
@@ -318,11 +454,127 @@ export default function App() {
     setActiveDrawing(null);
   };
 
+  // ============================================================================
+  // APP 4 LOGIC: IMPRESORA A COLOR (1 HOJA A LA VEZ + MARCOS)
+  // ============================================================================
+  const handleTriggerColorPrint = useCallback(
+    (
+      tier: ColorFrameTier,
+      customName?: string,
+      customAvatar?: string,
+      customActionText?: string,
+      customIcon?: string
+    ) => {
+      const randomAvatar = PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)];
+      const sampleNames = [
+        'Denis 🍓',
+        'Alexis Carbajal',
+        'Yeison TC',
+        'MARIANA',
+        'Angie:3',
+        'saltiel',
+        'Antonio El Hijo',
+        'RaulCastroJimenez',
+      ];
+      const displayName =
+        customName?.trim() ||
+        sampleNames[Math.floor(Math.random() * sampleNames.length)];
+
+      const trigger = colorTriggersRef.current[tier];
+      const giftDef = findTikTokGift(trigger.giftName);
+      const defaultCoinsMap: Record<ColorFrameTier, number> = {
+        bw_follow: 0,
+        color_rose: 1,
+        frame_gold: 5,
+        frame_emerald: 10,
+        frame_azure: 30,
+        frame_mythic: 99,
+      };
+      const coins =
+        trigger.mode === 'gift' && giftDef
+          ? giftDef.coins
+          : defaultCoinsMap[tier];
+
+      const defaultAction =
+        tier === 'bw_follow'
+          ? 'Siguiendo'
+          : `${giftDef?.icon || '🌹'} con ${giftDef?.label || trigger.giftName}`;
+
+      const newColorDonor: ColorDonorItem = {
+        id: `cprint_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        username: displayName.toLowerCase().replace(/\s+/g, '_'),
+        displayName,
+        avatarUrl: customAvatar || randomAvatar.dataUrl,
+        frameTier: tier,
+        giftName: giftDef?.label || trigger.giftName || 'Seguir',
+        giftIcon: customIcon || giftDef?.icon || (tier === 'bw_follow' ? '➕' : '🌹'),
+        coins,
+        timestamp: Date.now(),
+        actionText: customActionText || defaultAction,
+      };
+
+      setColorActiveDonor((currentActive) => {
+        if (!currentActive) {
+          return newColorDonor;
+        }
+        // Queue for single-sheet printing (Mythic & Azure VIP frames jump ahead)
+        setColorQueue((prev) => {
+          if (tier === 'frame_mythic' || tier === 'frame_azure') {
+            return [newColorDonor, ...prev];
+          }
+          return [...prev, newColorDonor];
+        });
+        return currentActive;
+      });
+    },
+    []
+  );
+
+  const handleColorPrintComplete = useCallback((completed: ColorDonorItem, slotIndex?: number) => {
+    setColorPrintedCount((prev) => prev + 1);
+    setColorRecentDonors((prev) => [completed, ...prev.slice(0, 14)]);
+
+    if (completed.frameTier === 'frame_mythic') {
+      setColorVipItem(completed);
+    } else {
+      const tierFixedSlot: Record<Exclude<ColorFrameTier, 'frame_mythic'>, number> = {
+        bw_follow: 0,
+        color_rose: 4,
+        frame_gold: 5,
+        frame_emerald: 6,
+        frame_azure: 7,
+      };
+      const fixedSlot = tierFixedSlot[completed.frameTier];
+      setColorWallItems((prev) => {
+        const next = [...prev];
+        const targetIdx = typeof slotIndex === 'number' ? slotIndex : fixedSlot;
+        next[targetIdx] = completed;
+        return next;
+      });
+    }
+
+    setColorQueue((prevQueue) => {
+      if (prevQueue.length === 0) {
+        setColorActiveDonor(null);
+        return [];
+      }
+      const [next, ...rest] = prevQueue;
+      setColorActiveDonor(next);
+      return rest;
+    });
+  }, []);
+
+  const handleClearColorQueue = () => {
+    setColorQueue([]);
+    setColorActiveDonor(null);
+  };
+
   const triggerGiftRef = useRef(handleTriggerGift);
   triggerGiftRef.current = handleTriggerGift;
 
-  // Accumulate a viewer's screen taps; once they pause, print the highest
-  // "likes" tier they reached (big > medium > small color > small B/N).
+  const triggerColorPrintRef = useRef(handleTriggerColorPrint);
+  triggerColorPrintRef.current = handleTriggerColorPrint;
+
   const LIKE_SETTLE_MS = 2500;
   const registerLikes = useCallback(
     (username: string, displayName: string, avatarUrl: string, count: number) => {
@@ -338,7 +590,6 @@ export default function App() {
         const tier = TIER_PRIORITY.find(
           (t) => triggers[t].mode === 'likes' && bucket.count >= triggers[t].likes
         );
-        // Not enough taps for any tier yet: keep accumulating
         if (!tier) return;
         triggerGiftRef.current(
           tier,
@@ -352,6 +603,36 @@ export default function App() {
       }, LIKE_SETTLE_MS);
 
       likeBuckets.current[key] = bucket;
+    },
+    []
+  );
+
+  const registerColorLikes = useCallback(
+    (username: string, displayName: string, avatarUrl: string, count: number) => {
+      const key = (username || 'espectador').toLowerCase().trim();
+      const bucket = colorLikeBuckets.current[key] || { count: 0, avatarUrl: '', displayName };
+      bucket.count += count;
+      if (avatarUrl) bucket.avatarUrl = avatarUrl;
+      if (displayName) bucket.displayName = displayName;
+      if (bucket.timer) clearTimeout(bucket.timer);
+
+      bucket.timer = setTimeout(() => {
+        const triggers = colorTriggersRef.current;
+        const tier = COLOR_TIER_PRIORITY.find(
+          (t) => triggers[t].mode === 'likes' && bucket.count >= triggers[t].likes
+        );
+        if (!tier) return;
+        triggerColorPrintRef.current(
+          tier,
+          bucket.displayName,
+          bucket.avatarUrl || undefined,
+          `❤️ ${bucket.count} likes`,
+          '❤️'
+        );
+        delete colorLikeBuckets.current[key];
+      }, LIKE_SETTLE_MS);
+
+      colorLikeBuckets.current[key] = bucket;
     },
     []
   );
@@ -373,78 +654,170 @@ export default function App() {
             }
             return;
           }
-          if (activeApp !== 'printer') {
+
+          const currentApp = activeAppRef.current;
+          if (currentApp !== 'printer' && currentApp !== 'color_printer') {
             return;
           }
+
           if (parsed.type === 'status' || parsed.type === 'connected') {
             setIsTikTokConnected(!!parsed.data?.isConnected);
             if (parsed.type === 'connected') {
-              // Live started: wipe simulated/demo prints so only real viewers are printed
-              likeBuckets.current = {};
-              handleClearQueue();
+              if (currentApp === 'printer') {
+                likeBuckets.current = {};
+                handleClearQueue();
+              } else if (currentApp === 'color_printer') {
+                colorLikeBuckets.current = {};
+                handleClearColorQueue();
+              }
             }
             if (parsed.data?.lastError) {
               setConnectionError(parsed.data.lastError);
             } else if (parsed.data?.isConnected) {
               setConnectionError(null);
             }
-          } else if (parsed.type === 'shared-settings') {
-            if (parsed.data && typeof parsed.data === 'object') {
-              setSettings((prev) => ({ ...prev, ...parsed.data }));
-            }
           } else if (parsed.type === 'disconnected') {
             setIsTikTokConnected(false);
           } else if (parsed.type === 'error') {
             setConnectionError(parsed.data?.error || 'Error de conexión con TikTok Live');
             setIsTikTokConnected(false);
-          } else if (parsed.type === 'gift') {
-            // REAL GIFT: print on the highest-priority tier configured for this gift
-            const gift = parsed.data;
-            const triggers = triggersRef.current;
-            const tier = TIER_PRIORITY.find(
-              (t) =>
-                triggers[t].mode === 'gift' &&
-                triggers[t].giftName.toLowerCase() === (gift.giftName || '').toLowerCase()
-            );
-            if (!tier) return;
-            const def = findTikTokGift(gift.giftName);
-            handleTriggerGift(
-              tier,
-              gift.nickname || gift.username,
-              gift.avatarUrl,
-              `${def?.icon || '🎁'} ${def?.label || gift.giftName} (x${gift.repeatCount || 1})`,
-              def?.icon
-            );
-          } else if (parsed.type === 'chat') {
-            // REAL CHAT: only the B/N tier can be triggered by a keyword
-            const chat = parsed.data;
-            const trigger = triggersRef.current.heart;
-            const keyword = trigger.text.trim().toLowerCase();
-            const comment = (chat.comment || '').trim().toLowerCase();
-            if (trigger.mode !== 'text' || !keyword) return;
-            if (comment === keyword || comment.startsWith(`${keyword} `)) {
-              handleTriggerGift(
-                'heart',
-                chat.displayName || chat.uniqueId,
-                chat.avatarUrl,
-                `💬 Escribió "${chat.comment}"`,
-                '💬'
+          } else if (currentApp === 'printer') {
+            // ================= APP 1: PLOTTER CONTINUO =================
+            if (parsed.type === 'follow') {
+              const follow = parsed.data;
+              const triggers = triggersRef.current;
+              const tier = TIER_PRIORITY.find((t) => triggers[t].mode === 'follow');
+              if (!tier) return;
+              triggerGiftRef.current(
+                tier,
+                follow.nickname || follow.username,
+                follow.avatarUrl,
+                '➕ Siguiendo',
+                '➕',
+                'Seguir'
+              );
+            } else if (parsed.type === 'gift') {
+              const gift = parsed.data;
+              const triggers = triggersRef.current;
+              const tier = TIER_PRIORITY.find(
+                (t) =>
+                  triggers[t].mode === 'gift' &&
+                  triggers[t].giftName.toLowerCase() === (gift.giftName || '').toLowerCase()
+              );
+              if (!tier) return;
+              const def = findTikTokGift(gift.giftName);
+              triggerGiftRef.current(
+                tier,
+                gift.nickname || gift.username,
+                gift.avatarUrl,
+                `${def?.icon || '🎁'} ${def?.label || gift.giftName} (x${gift.repeatCount || 1})`,
+                def?.icon
+              );
+            } else if (parsed.type === 'chat') {
+              const chat = parsed.data;
+              const trigger = triggersRef.current.heart;
+              const keyword = trigger.text.trim().toLowerCase();
+              const comment = (chat.comment || '').trim().toLowerCase();
+              if (trigger.mode !== 'text' || !keyword) return;
+              if (comment === keyword || comment.startsWith(`${keyword} `)) {
+                triggerGiftRef.current(
+                  'heart',
+                  chat.displayName || chat.uniqueId,
+                  chat.avatarUrl,
+                  `💬 Escribió "${chat.comment}"`,
+                  '💬'
+                );
+              }
+            } else if (parsed.type === 'like') {
+              const likeData = parsed.data;
+              if (likeData.totalLikes) {
+                setTotalLikesCount(likeData.totalLikes);
+              } else {
+                setTotalLikesCount((prev) => prev + (likeData.likeCount || 1));
+              }
+              registerLikes(
+                likeData.username,
+                likeData.nickname || likeData.username,
+                likeData.avatarUrl,
+                likeData.likeCount || 1
               );
             }
-          } else if (parsed.type === 'like') {
-            // REAL TIKTOK LIVE LIKES (Me Gusta / Corazones flotantes ❤️)
-            const likeData = parsed.data;
-            if (likeData.totalLikes) {
-              setTotalLikesCount(likeData.totalLikes);
-            } else {
-              setTotalLikesCount((prev) => prev + (likeData.likeCount || 1));
+          } else if (currentApp === 'color_printer') {
+            // ================= APP 4: IMPRESORA A COLOR (1 A 1) =================
+            if (parsed.type === 'follow') {
+              const follow = parsed.data;
+              const triggers = colorTriggersRef.current;
+              const tier =
+                COLOR_TIER_PRIORITY.find((t) => triggers[t].mode === 'follow') || 'bw_follow';
+              triggerColorPrintRef.current(
+                tier,
+                follow.nickname || follow.username,
+                follow.avatarUrl,
+                'Siguiendo',
+                '➕'
+              );
+            } else if (parsed.type === 'gift') {
+              const gift = parsed.data;
+              const triggers = colorTriggersRef.current;
+              const giftNameLower = (gift.giftName || '').toLowerCase();
+              const coins = Number(gift.coins || 1);
+
+              // First match exact configured gift name, or fallback by coin value matching the 5 gift tiers
+              let tier = COLOR_TIER_PRIORITY.find(
+                (t) =>
+                  triggers[t].mode === 'gift' &&
+                  triggers[t].giftName.toLowerCase() === giftNameLower
+              );
+              if (!tier) {
+                if (coins >= 99) tier = 'frame_mythic';
+                else if (coins >= 30) tier = 'frame_azure';
+                else if (coins >= 10) tier = 'frame_emerald';
+                else if (coins >= 5) tier = 'frame_gold';
+                else tier = 'color_rose';
+              }
+
+              const def = findTikTokGift(gift.giftName);
+              triggerColorPrintRef.current(
+                tier,
+                gift.nickname || gift.username,
+                gift.avatarUrl,
+                `${def?.icon || '🌹'} con ${def?.label || gift.giftName}`,
+                def?.icon || '🌹'
+              );
+            } else if (parsed.type === 'chat') {
+              const chat = parsed.data;
+              const triggers = colorTriggersRef.current;
+              const comment = (chat.comment || '').trim().toLowerCase();
+              const tier = COLOR_TIER_PRIORITY.find((t) => {
+                const kw = triggers[t].text.trim().toLowerCase();
+                return (
+                  triggers[t].mode === 'text' &&
+                  kw &&
+                  (comment === kw || comment.startsWith(`${kw} `))
+                );
+              });
+              if (!tier) return;
+              triggerColorPrintRef.current(
+                tier,
+                chat.displayName || chat.uniqueId,
+                chat.avatarUrl,
+                `💬 "${chat.comment}"`,
+                '💬'
+              );
+            } else if (parsed.type === 'like') {
+              const likeData = parsed.data;
+              if (likeData.totalLikes) {
+                setTotalLikesCount(likeData.totalLikes);
+              } else {
+                setTotalLikesCount((prev) => prev + (likeData.likeCount || 1));
+              }
+              registerColorLikes(
+                likeData.username,
+                likeData.nickname || likeData.username,
+                likeData.avatarUrl,
+                likeData.likeCount || 1
+              );
             }
-            registerLikes(
-              likeData.username,
-              likeData.nickname || likeData.username,
-              likeData.avatarUrl,
-              likeData.likeCount || 1
-            );
           }
         } catch (e) {
           console.error('Error procesando evento TikTok:', e);
@@ -463,7 +836,7 @@ export default function App() {
       if (eventSource) eventSource.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
-  }, [handleTriggerGift]);
+  }, [registerLikes, registerColorLikes]);
 
   // Connect or disconnect from real TikTok Live stream
   const handleToggleTikTokConnection = async () => {
@@ -509,8 +882,6 @@ export default function App() {
       }
     }
   };
-
-
 
   // Initial demo completed row matching user's video layout (row 2 has 3 completed portraits)
   useEffect(() => {
@@ -578,10 +949,12 @@ export default function App() {
     const randomAvatar = PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)];
     const sampleNames = ['carlos_live', 'sofia_star', 'ana_taps', 'mateo_tiktok', 'lucia_fans'];
     const randomName = sampleNames[Math.floor(Math.random() * sampleNames.length)];
-    registerLikes(randomName, randomName, randomAvatar.dataUrl, count);
+    if (activeApp === 'color_printer') {
+      registerColorLikes(randomName, randomName, randomAvatar.dataUrl, count);
+    } else {
+      registerLikes(randomName, randomName, randomAvatar.dataUrl, count);
+    }
   };
-
-
 
   // Dedicated OBS Overlay full-screen render
   if (isUrlOverlay && activeApp === 'soccer') {
@@ -601,6 +974,23 @@ export default function App() {
         isTikTokConnected={isTikTokConnected}
         tiktokUsername={settings.tiktokUsername}
       />
+    );
+  }
+
+  if (isUrlOverlay && activeApp === 'color_printer') {
+    return (
+      <div className="w-screen h-screen bg-transparent overflow-hidden flex items-center justify-center p-2">
+        <ColorPhotoPrinter
+          activeDonor={colorActiveDonor}
+          queueCount={colorQueue.length}
+          printedCount={colorPrintedCount}
+          wallItems={colorWallItems}
+          vipCenterItem={colorVipItem}
+          onPrintComplete={handleColorPrintComplete}
+          obsMode={false}
+          colorTierTriggers={colorTriggers}
+        />
+      </div>
     );
   }
 
@@ -648,6 +1038,61 @@ export default function App() {
           settings={settings}
           onUpdateSettings={updateSettings}
         />
+      ) : activeApp === 'color_printer' ? (
+        <>
+          <HeaderNav
+            obsMode={settings.obsMode}
+            onToggleObsMode={() => updateSettings({ obsMode: !settings.obsMode })}
+            onOpenObsGuide={() => setIsObsGuideModalOpen(true)}
+            onOpenRulesModal={() => setIsRulesModalOpen(true)}
+          />
+
+          <main className="flex-1 p-4 lg:p-6 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* LEFT COLUMN: ASURE PRINT 3D COLOR PRINTER SCENE (5 cols) */}
+            <section className="lg:col-span-5 flex flex-col items-center justify-start min-h-[680px]">
+              <div className="w-full max-w-[460px] flex items-center justify-between mb-2 px-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-400 flex items-center gap-1.5">
+                  <Printer className="h-3.5 w-3.5" />
+                  <span>Impresora a Color 1 a 1 (ASURE PRINT)</span>
+                </span>
+                {colorQueue.length > 0 && (
+                  <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-mono font-bold text-amber-300 border border-amber-500/30">
+                    {colorQueue.length} en cola
+                  </span>
+                )}
+              </div>
+
+              <ColorPhotoPrinter
+                activeDonor={colorActiveDonor}
+                queueCount={colorQueue.length}
+                printedCount={colorPrintedCount}
+                wallItems={colorWallItems}
+                vipCenterItem={colorVipItem}
+                onPrintComplete={handleColorPrintComplete}
+                obsMode={settings.obsMode}
+                colorTierTriggers={colorTriggers}
+              />
+            </section>
+
+            {/* RIGHT COLUMN: COLOR PRINTER CONSOLE (7 cols) */}
+            <section className="lg:col-span-7 flex flex-col">
+              <ColorPrinterConsole
+                settings={settings}
+                colorTierTriggers={colorTriggers}
+                onUpdateSettings={updateSettings}
+                onTriggerColorPrint={handleTriggerColorPrint}
+                onClearQueue={handleClearColorQueue}
+                recentDonors={colorRecentDonors}
+                isTikTokConnected={isTikTokConnected}
+                isConnecting={isConnecting}
+                connectionError={connectionError}
+                onToggleTikTokConnection={handleToggleTikTokConnection}
+                totalLikesCount={totalLikesCount}
+                onSimulateLikes={handleSimulateLikes}
+              />
+            </section>
+          </main>
+        </>
       ) : (
         <>
           {/* Top Bar strictly following guidelines */}
@@ -720,3 +1165,4 @@ export default function App() {
     </div>
   );
 }
+

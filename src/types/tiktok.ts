@@ -39,6 +39,7 @@ export interface StreamSettings {
   drawOnLikes?: boolean; // trigger drawing when viewer gives screen likes / hearts
   likesThreshold?: number; // how many likes from a user needed to trigger drawing (e.g. 10)
   tierTriggers: TierTriggers;
+  colorTierTriggers?: ColorTierTriggers;
   plotterSound: PlotterSoundId;
   plotterVolume: number; // 0 to 1, multiplied by the master soundVolume
 }
@@ -92,7 +93,7 @@ export const PRESET_GIFTS: GiftDefinition[] = [
 ];
 
 // ---- Configurable capture triggers per drawing tier ----
-export type TriggerMode = 'likes' | 'gift' | 'text';
+export type TriggerMode = 'likes' | 'gift' | 'text' | 'follow';
 
 export interface TierTrigger {
   mode: TriggerMode;
@@ -128,8 +129,11 @@ export const TIKTOK_GIFTS: TikTokGift[] = [
   { name: 'Heart Me', label: 'Corazón', icon: '💗', coins: 1 },
   { name: 'Finger Heart', label: 'Corazón coreano', icon: '🫰', coins: 5 },
   { name: 'Friendship Necklace', label: 'Collar de amistad', icon: '📿', coins: 10 },
+  { name: 'Rosa', label: 'Rosa luminosa', icon: '🌺', coins: 10 },
   { name: 'Perfume', label: 'Perfume', icon: '🧴', coins: 20 },
   { name: 'Doughnut', label: 'Rosquilla', icon: '🍩', coins: 30 },
+  { name: 'Cap', label: 'Gorra', icon: '🧢', coins: 99 },
+  { name: 'Little Crown', label: 'Corona', icon: '👑', coins: 99 },
   { name: 'Hand Hearts', label: 'Manos de corazón', icon: '🫶', coins: 100 },
   { name: 'Sunglasses', label: 'Gafas de sol', icon: '🕶️', coins: 199 },
   { name: 'Corgi', label: 'Corgi', icon: '🐕', coins: 299 },
@@ -151,6 +155,7 @@ export const DEFAULT_TIER_TRIGGERS: TierTriggers = {
 
 /** Short caption printed under a drawing, e.g. "5 likes", "Rosa" or "\"yo\"" */
 export const triggerCaption = (t: TierTrigger) => {
+  if (t.mode === 'follow') return 'Siguiendo';
   if (t.mode === 'likes') return `${t.likes} likes`;
   if (t.mode === 'text') return `"${t.text}"`;
   return findTikTokGift(t.giftName)?.label || t.giftName;
@@ -158,8 +163,71 @@ export const triggerCaption = (t: TierTrigger) => {
 
 /** Short legend text for a tier, e.g. "Peque B/N - 5x ❤️" or "Grande - 🍩 Rosquilla" */
 export const describeTrigger = (tier: GiftTier, t: TierTrigger) => {
+  if (t.mode === 'follow') return `${TIER_LABELS[tier]} - ➕ Seguir`;
   if (t.mode === 'likes') return `${TIER_LABELS[tier]} - ${t.likes}x ❤️`;
   if (t.mode === 'text') return `${TIER_LABELS[tier]} - 💬 "${t.text}"`;
   const g = findTikTokGift(t.giftName);
   return `${TIER_LABELS[tier]} - ${g ? `${g.icon} ${g.label}` : `🎁 ${t.giftName}`}`;
 };
+
+// ============================================================================
+// APP 4: IMPRESORA A COLOR (1 HOJA A LA VEZ + MARCOS DE DONACIÓN DEL VIDEO)
+// ============================================================================
+export type ColorFrameTier =
+  | 'bw_follow'
+  | 'color_rose'
+  | 'frame_gold'
+  | 'frame_emerald'
+  | 'frame_azure'
+  | 'frame_mythic';
+
+export type ColorTierTriggers = Record<ColorFrameTier, TierTrigger>;
+
+export const COLOR_TIER_PRIORITY: ColorFrameTier[] = [
+  'frame_mythic',
+  'frame_azure',
+  'frame_emerald',
+  'frame_gold',
+  'color_rose',
+  'bw_follow',
+];
+
+export const COLOR_TIER_LABELS: Record<ColorFrameTier, string> = {
+  bw_follow: 'Blanco y Negro',
+  color_rose: 'Color Rosa (1)',
+  frame_gold: 'Marco Dorado (5)',
+  frame_emerald: 'Marco Esmeralda (10)',
+  frame_azure: 'Marco Rosquilla (30)',
+  frame_mythic: 'Marco Místico VIP (99)',
+};
+
+export const DEFAULT_COLOR_TIER_TRIGGERS: ColorTierTriggers = {
+  bw_follow: { mode: 'follow', likes: 5, giftName: 'Rose', text: 'yo' },
+  color_rose: { mode: 'gift', likes: 10, giftName: 'Rose', text: '' },
+  frame_gold: { mode: 'gift', likes: 25, giftName: 'Finger Heart', text: '' },
+  frame_emerald: { mode: 'gift', likes: 50, giftName: 'Friendship Necklace', text: '' },
+  frame_azure: { mode: 'gift', likes: 100, giftName: 'Doughnut', text: '' },
+  frame_mythic: { mode: 'gift', likes: 300, giftName: 'Little Crown', text: '' },
+};
+
+export interface ColorDonorItem {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  frameTier: ColorFrameTier;
+  giftName: string;
+  giftIcon: string;
+  coins: number;
+  timestamp: number;
+  actionText: string; // e.g. "Siguiendo", "🌹 con Rose", "🍩 con Rosquilla"
+}
+
+export const describeColorTrigger = (tier: ColorFrameTier, t: TierTrigger) => {
+  if (t.mode === 'follow') return `${COLOR_TIER_LABELS[tier]}: ➕ Seguir`;
+  if (t.mode === 'likes') return `${COLOR_TIER_LABELS[tier]}: ${t.likes}x ❤️`;
+  if (t.mode === 'text') return `${COLOR_TIER_LABELS[tier]}: 💬 "${t.text}"`;
+  const g = findTikTokGift(t.giftName);
+  return `${COLOR_TIER_LABELS[tier]}: ${g ? `${g.icon} ${g.label} (${g.coins})` : `🎁 ${t.giftName}`}`;
+};
+

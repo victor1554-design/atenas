@@ -309,6 +309,43 @@ async function startServer() {
         broadcastSSE('member', memberEvent);
       });
 
+      // Capture real TikTok Live follows ("sigue al creador LIVE")
+      const recentFollowers = new Set<string>();
+      const dispatchFollow = (data: any) => {
+        const u = data.user || data;
+        const uniqueId = (u.uniqueId || u.nickname || data.uniqueId || 'espectador').toLowerCase().trim();
+        if (recentFollowers.has(uniqueId)) return;
+        recentFollowers.add(uniqueId);
+        setTimeout(() => recentFollowers.delete(uniqueId), 5000);
+
+        const rawAvatar = getAvatarUrl(u, data);
+        const safeAvatar = rawAvatar
+          ? `/api/proxy-image?url=${encodeURIComponent(rawAvatar)}`
+          : '';
+
+        const followEvent = {
+          id: `follow_${data.msgId || Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          username: uniqueId,
+          nickname: u.nickname || u.uniqueId || data.nickname || 'Espectador',
+          avatarUrl: safeAvatar,
+          timestamp: Date.now(),
+        };
+
+        console.log(`[TikTok Live FOLLOW] @${followEvent.username} siguió al creador`);
+        broadcastSSE('follow', followEvent);
+      };
+
+      conn.on(WebcastEvent.FOLLOW || 'follow', (data: any) => {
+        dispatchFollow(data);
+      });
+
+      conn.on(WebcastEvent.SOCIAL || 'social', (data: any) => {
+        const displayType = String(data?.displayType || data?.label || '').toLowerCase();
+        if (displayType.includes('follow')) {
+          dispatchFollow(data);
+        }
+      });
+
       // Capture real TikTok Live likes (screen tap hearts ❤️)
       conn.on(WebcastEvent.LIKE || 'like', (data: any) => {
         const u = data.user || data;
