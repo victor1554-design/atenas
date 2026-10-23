@@ -1,0 +1,8 @@
+{
+  "name": "TikTok Live Drawing Runner",
+  "description": "Transmite en TikTok Live con una corredora interactiva que dibuja la foto de perfil del donante en 2 segundos según su regalo: Corazón en blanco y negro, Flor a color pequeño, Donut mediano, y Megaregalo con pantalla completa GOOT.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
