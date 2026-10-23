@@ -106,17 +106,55 @@ export default function App() {
   }, []);
 
   // Dispatch next item in queue when current drawing finishes
-  const processNextInQueue = useCallback(() => {
+  const processNextInQueue = useCallback((remainingItems: PrintedItem[] = []) => {
     setDrawingQueue((prevQueue) => {
       if (prevQueue.length === 0) {
         setActiveDrawing(null);
         return [];
       }
       const [nextDonor, ...rest] = prevQueue;
+      if (nextDonor.giftTier === 'big_gift') {
+        setActiveRowType('big_goot_row');
+      } else if (nextDonor.giftTier === 'donut' || remainingItems.some((i) => i.giftTier === 'donut')) {
+        setActiveRowType('duo_row');
+      } else {
+        setActiveRowType('trio_row');
+      }
       setActiveDrawing(nextDonor);
       return rest;
     });
   }, []);
+
+  // Keep activeRowType and row capacity strictly aligned when a medium donut or big gift starts drawing
+  useEffect(() => {
+    if (!activeDrawing) return;
+    if (activeDrawing.giftTier === 'big_gift') {
+      if (activeRowType !== 'big_goot_row') {
+        setActiveRowType('big_goot_row');
+      }
+    } else if (activeDrawing.giftTier === 'donut') {
+      if (activeRowItems.length >= 2) {
+        soundEngine.playPaperFeedSound();
+        const flushedRow: PaperRow = {
+          id: `row_${Date.now()}_flush_med`,
+          type: activeRowItems.some((i) => i.giftTier === 'donut') ? 'duo_row' : 'trio_row',
+          items: activeRowItems,
+          maxItems: activeRowItems.some((i) => i.giftTier === 'donut') ? 2 : 3,
+        };
+        setCompletedRows((prev) => [flushedRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
+        setActiveRowItems([]);
+      }
+      if (activeRowType !== 'duo_row') {
+        setActiveRowType('duo_row');
+      }
+    } else {
+      const shouldBeDuo = activeRowItems.some((i) => i.giftTier === 'donut');
+      const targetType: PaperRowType = shouldBeDuo ? 'duo_row' : 'trio_row';
+      if (activeRowType !== targetType) {
+        setActiveRowType(targetType);
+      }
+    }
+  }, [activeDrawing, activeRowItems, activeRowType]);
 
   // Handle incoming gift event (from simulator, TikTok or custom donor)
   const handleTriggerGift = useCallback(
@@ -162,6 +200,19 @@ export default function App() {
         if (tier === 'big_gift') {
           setActiveRowType('big_goot_row');
         } else if (tier === 'donut') {
+          if (activeRowItems.length >= 2) {
+            soundEngine.playPaperFeedSound();
+            const flushedRow: PaperRow = {
+              id: `row_${Date.now()}_flush_med`,
+              type: activeRowItems.some((i) => i.giftTier === 'donut') ? 'duo_row' : 'trio_row',
+              items: activeRowItems,
+              maxItems: activeRowItems.some((i) => i.giftTier === 'donut') ? 2 : 3,
+            };
+            setCompletedRows((prev) => [flushedRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
+            setActiveRowItems([]);
+          }
+          setActiveRowType('duo_row');
+        } else if (activeRowItems.some((i) => i.giftTier === 'donut')) {
           setActiveRowType('duo_row');
         } else {
           setActiveRowType('trio_row');
@@ -176,7 +227,7 @@ export default function App() {
         }
       }
     },
-    [activeDrawing]
+    [activeDrawing, activeRowItems]
   );
 
   // When 2.0s drawing completes at the active line under the pen
@@ -200,9 +251,9 @@ export default function App() {
       if (activeRowItems.length > 0) {
         const flushedRow: PaperRow = {
           id: `row_${Date.now()}_flush`,
-          type: activeRowType,
+          type: activeRowItems.some((i) => i.giftTier === 'donut') ? 'duo_row' : 'trio_row',
           items: activeRowItems,
-          maxItems: activeRowType === 'duo_row' ? 2 : 3,
+          maxItems: activeRowItems.some((i) => i.giftTier === 'donut') ? 2 : 3,
         };
         setCompletedRows((prev) => [flushedRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
       }
@@ -224,13 +275,14 @@ export default function App() {
       setCompletedRows((prev) => [bigRow, spacerRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
       setActiveRowItems([]);
       setActiveRowType('trio_row');
-      processNextInQueue();
+      processNextInQueue([]);
       return;
     }
 
     // 2. MEDIUM DONUT OR SMALL (Hearts & Flowers)
     const updatedActiveItems = [...activeRowItems, newItem];
-    const currentRowTargetMax = (isMed || activeRowType === 'duo_row') ? 2 : 3;
+    const hasMedInRow = isMed || activeRowType === 'duo_row' || updatedActiveItems.some((i) => i.giftTier === 'donut');
+    const currentRowTargetMax = hasMedInRow ? 2 : 3;
 
     // CHECK: IS THE CURRENT ROW FULLY DRAWN?
     if (updatedActiveItems.length >= currentRowTargetMax) {
@@ -247,17 +299,16 @@ export default function App() {
       setCompletedRows((prev) => [newFullRow, ...prev].slice(0, MAX_VISIBLE_ROWS));
       setActiveRowItems([]);
       setActiveRowType('trio_row'); // Next fresh row defaults to trio
+      processNextInQueue([]);
     } else {
       // THE ROW IS NOT FULL YET: IT STAYS RIGHT AT THE TOP ROW!
       // Does not scroll down until all drawings in the row are complete!
       setActiveRowItems(updatedActiveItems);
-      if (isMed) {
+      if (hasMedInRow) {
         setActiveRowType('duo_row');
       }
+      processNextInQueue(updatedActiveItems);
     }
-
-    // Process next queued item
-    processNextInQueue();
   };
 
   const handleClearQueue = () => {

@@ -204,7 +204,7 @@ export const DrawingStation: React.FC<DrawingStationProps> = ({
           {currentDonor.giftTier === 'heart' && '❤️ Corazón · Pincel Tinta Negra B&N'}
           {currentDonor.giftTier === 'flower' && '🌸 Flor · Pincel Acuarela Pequeño'}
           {currentDonor.giftTier === 'donut' && '🍩 Donut · Pincel Acuarela Mediano'}
-          {currentDonor.giftTier === 'big_gift' && '👑 Regalo Grande · Preparando GOOT'}
+          {currentDonor.giftTier === 'big_gift' && '👑 Regalo Grande · Preparando GOAT'}
         </p>
       </div>
     </div>

@@ -83,7 +83,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Rule 4: Big Gift / GOOT */}
+          {/* Rule 4: Big Gift / GOAT */}
           <div className="flex items-start gap-3 rounded-2xl border-2 border-yellow-500/70 bg-yellow-950/25 p-3.5">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-500/20 text-2xl border border-yellow-500/50">
               👑
@@ -91,12 +91,12 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose }) => {
             <div>
               <div className="text-sm font-black text-amber-200 flex items-center gap-2">
                 <span>Dona un León / Universo</span>
-                <span className="rounded bg-yellow-500 px-1.5 py-0.5 text-[10px] font-black text-slate-950">
-                  GOOT
+                <span className="rounded bg-red-700 px-1.5 py-0.5 text-[10px] font-black text-white">
+                  SELLO GOAT
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-amber-300/90">
-                ¡Dibuja en <strong>toda la pantalla completa</strong> con animación monumental y estampa la palabra <strong>GOOT</strong> con fuegos artificiales!
+                ¡Dibuja en <strong>formato gigante</strong> y estampa el sello de <strong>GOAT</strong> con fuegos artificiales!
               </p>
             </div>
           </div>

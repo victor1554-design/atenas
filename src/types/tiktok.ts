@@ -87,7 +87,7 @@ export const PRESET_GIFTS: GiftDefinition[] = [
     coins: 30,
     icon: '🍩',
     badgeColor: 'from-amber-400 via-yellow-500 to-amber-600',
-    description: 'Regalo Rosquilla / VIP (30 monedas) - ¡Dibuja en PANTALLA COMPLETA con GOOT!',
+    description: 'Regalo Rosquilla / VIP (30 monedas) - ¡Dibuja en GRANDE con sello GOAT!',
   },
 ];
 

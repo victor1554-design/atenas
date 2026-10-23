@@ -47,12 +47,17 @@ export async function prepareImageForDrawing(
         return;
       }
 
-      // Draw portrait inside circle
+      // Draw portrait inside circle (center-cropped square so rectangular avatars never stretch)
       ctx.save();
       ctx.beginPath();
       ctx.arc(targetWidth / 2, targetHeight / 2, Math.min(targetWidth, targetHeight) / 2 - 3, 0, Math.PI * 2);
       ctx.clip();
-      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      const natW = img.naturalWidth || img.width || targetWidth;
+      const natH = img.naturalHeight || img.height || targetHeight;
+      const minSide = Math.min(natW, natH);
+      const sx = (natW - minSide) / 2;
+      const sy = (natH - minSide) / 2;
+      ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, targetWidth, targetHeight);
       ctx.restore();
 
       const imgData = ctx.getImageData(0, 0, targetWidth, targetHeight);

@@ -497,7 +497,7 @@ export const StreamerConsole: React.FC<StreamerConsoleProps> = ({
                   onClick={() => onTriggerGift('big_gift', customUsername, selectedAvatar, customComment)}
                   className="flex items-center justify-center gap-2 rounded-xl border border-yellow-500 bg-yellow-500/20 py-2.5 text-xs font-black text-yellow-300 hover:bg-yellow-500/30 transition-all"
                 >
-                  <span>👑 Mega GOOT</span>
+                  <span>👑 Mega GOAT</span>
                 </button>
               </div>
             </div>

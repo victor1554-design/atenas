@@ -202,24 +202,27 @@ export const GootOverlay: React.FC<GootOverlayProps> = ({
             </div>
           )}
 
-          {/* THE GIANT "GOOT" STAMP (Appears upon 2s completion) */}
+          {/* THE GIANT "GOAT" STAMP (Appears upon 2s completion) */}
           <AnimatePresence>
             {isGootRevealed && (
               <motion.div
                 initial={{ scale: 3.5, rotate: -15, opacity: 0 }}
-                animate={{ scale: [3.5, 0.9, 1.05, 1], rotate: [-15, -4, 0], opacity: 1 }}
+                animate={{ scale: [3.5, 0.9, 1.05, 1], rotate: [-15, -6, -6], opacity: 1 }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
-                className="relative my-2"
+                className="relative my-3"
               >
-                <div className="relative font-goot text-7xl md:text-9xl font-black tracking-tighter uppercase">
-                  {/* Shadow glow layer */}
-                  <span className="absolute inset-0 select-none text-transparent blur-md bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 opacity-90">
-                    GOOT
-                  </span>
-                  {/* Top vibrant golden chrome text */}
-                  <span className="relative select-none bg-gradient-to-b from-yellow-200 via-amber-400 to-amber-600 bg-clip-text text-transparent drop-shadow-[0_10px_20px_rgba(245,158,11,0.6)]">
-                    GOOT
-                  </span>
+                <div className="relative select-none rounded-xl bg-amber-50/95 px-6 py-2 border-4 border-red-700 shadow-[0_12px_30px_rgba(185,28,28,0.6)]">
+                  <div className="border-2 border-dashed border-red-700/85 rounded-lg px-5 py-1.5 flex flex-col items-center leading-none">
+                    <span className="text-xs font-black tracking-[0.25em] text-red-700 uppercase">
+                      ★ OFFICIAL SEAL ★
+                    </span>
+                    <span className="font-goot text-6xl md:text-8xl font-black tracking-widest text-red-700 uppercase">
+                      GOAT
+                    </span>
+                    <span className="text-[10px] font-extrabold tracking-[0.3em] text-red-700/85 uppercase">
+                      ★ ★ ★
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             )}
