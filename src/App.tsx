@@ -550,9 +550,22 @@ export default function App() {
           ? giftDef.coins
           : defaultCoinsMap[tier];
 
+      const defaultIcon =
+        trigger.mode === 'follow'
+          ? '➕'
+          : trigger.mode === 'likes'
+          ? '❤️'
+          : trigger.mode === 'text'
+          ? '💬'
+          : giftDef?.icon || '🌹';
+
       const defaultAction =
-        tier === 'bw_follow'
+        trigger.mode === 'follow'
           ? 'Siguiendo'
+          : trigger.mode === 'likes'
+          ? `❤️ ${trigger.likes} likes`
+          : trigger.mode === 'text'
+          ? `💬 "${trigger.text}"`
           : `${giftDef?.icon || '🌹'} con ${giftDef?.label || trigger.giftName}`;
 
       const newColorDonor: ColorDonorItem = {
@@ -562,22 +575,39 @@ export default function App() {
         avatarUrl: customAvatar || randomAvatar.dataUrl,
         frameTier: tier,
         giftName: giftDef?.label || trigger.giftName || 'Seguir',
-        giftIcon: customIcon || giftDef?.icon || (tier === 'bw_follow' ? '➕' : '🌹'),
+        giftIcon: customIcon || defaultIcon,
         coins,
         timestamp: Date.now(),
         actionText: customActionText || defaultAction,
+      };
+
+      const COLOR_TIER_PRIORITY_RANK: Record<ColorFrameTier, number> = {
+        frame_mythic: 6,  // 1° Prioridad máxima: Marco Místico (VIP)
+        frame_azure: 5,   // 2° Prioridad: Marco Diamante
+        frame_emerald: 4, // 3° Prioridad: Marco Esmeralda
+        frame_gold: 3,    // 4° Prioridad: Marco Dorado
+        color_rose: 2,    // 5° Prioridad: Color Rosa
+        bw_follow: 1,     // 6° Prioridad: Blanco y Negro
       };
 
       setColorActiveDonor((currentActive) => {
         if (!currentActive) {
           return newColorDonor;
         }
-        // Queue for single-sheet printing (Mythic & Azure VIP frames jump ahead)
+        // Cola con prioridad estricta por jerarquía de marco (y orden de llegada dentro del mismo nivel)
         setColorQueue((prev) => {
-          if (tier === 'frame_mythic' || tier === 'frame_azure') {
-            return [newColorDonor, ...prev];
+          const newRank = COLOR_TIER_PRIORITY_RANK[newColorDonor.frameTier];
+          const insertIdx = prev.findIndex(
+            (item) => COLOR_TIER_PRIORITY_RANK[item.frameTier] < newRank
+          );
+          if (insertIdx === -1) {
+            return [...prev, newColorDonor];
           }
-          return [...prev, newColorDonor];
+          return [
+            ...prev.slice(0, insertIdx),
+            newColorDonor,
+            ...prev.slice(insertIdx),
+          ];
         });
         return currentActive;
       });

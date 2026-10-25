@@ -3,6 +3,7 @@ import {
   ColorDonorItem,
   ColorFrameTier,
   ColorTierTriggers,
+  TierTrigger,
   findTikTokGift,
 } from '../types/tiktok';
 import { soundEngine } from '../utils/audio';
@@ -831,12 +832,49 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
       ? VIP_CENTER_SCREEN_COORDS
       : WALL_SLOT_SCREEN_COORDS[targetSlotIndex] || WALL_SLOT_SCREEN_COORDS[0];
 
-  // 6 Right-Side Options: SQUARE transparent frames ("transparente las 6", "cuadrado no circulo", "solo salga el circulo y el marco y la donacion que hara")
+  // Helper to dynamically resolve icon, badge text & badge style from each tier's configured trigger
+  const getLegendTriggerDisplay = (
+    trigger: TierTrigger,
+    fallbackIcon: string,
+    fallbackCoins: number
+  ): { icon: string; badgeText: string; badgeClass: string } => {
+    if (trigger.mode === 'follow') {
+      return {
+        icon: '➕',
+        badgeText: 'FOLLOW',
+        badgeClass: 'bg-red-600/95 text-white',
+      };
+    }
+    if (trigger.mode === 'likes') {
+      return {
+        icon: '❤️',
+        badgeText: `${trigger.likes} LIKES`,
+        badgeClass: 'bg-rose-600/95 text-white',
+      };
+    }
+    if (trigger.mode === 'text') {
+      const cleanText = (trigger.text || 'CHAT').trim();
+      return {
+        icon: '💬',
+        badgeText: cleanText.length > 7 ? `${cleanText.slice(0, 6)}…` : cleanText,
+        badgeClass: 'bg-sky-600/95 text-white',
+      };
+    }
+    const gift = findTikTokGift(trigger.giftName);
+    return {
+      icon: gift?.icon || fallbackIcon,
+      badgeText: String(gift?.coins || fallbackCoins),
+      badgeClass: 'bg-black/85 text-amber-300',
+    };
+  };
+
+  // 6 Side Options: SQUARE transparent frames ("transparente las 6", "cuadrado no circulo", "solo salga el circulo y el marco y la donacion que hara")
   const rightLegendTiers: {
     tier: ColorFrameTier;
     frameClass: string;
     circleClass: string;
     badgeText: string;
+    badgeClass: string;
     icon: string;
     label: string;
   }[] = [
@@ -844,48 +882,42 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
       tier: 'bw_follow',
       frameClass: 'border-2 border-stone-200 shadow-[0_0_8px_rgba(255,255,255,0.25)]',
       circleClass: 'border-2 border-stone-300',
-      badgeText: 'FOLLOW',
-      icon: '➕',
+      ...getLegendTriggerDisplay(colorTierTriggers.bw_follow, '➕', 1),
       label: 'B/N',
     },
     {
       tier: 'color_rose',
       frameClass: 'border-2 border-pink-400 shadow-[0_0_10px_rgba(244,63,94,0.55)]',
       circleClass: 'border-2 border-pink-300',
-      badgeText: String(findTikTokGift(colorTierTriggers.color_rose.giftName)?.coins || 1),
-      icon: findTikTokGift(colorTierTriggers.color_rose.giftName)?.icon || '🌹',
+      ...getLegendTriggerDisplay(colorTierTriggers.color_rose, '🌹', 1),
       label: 'Rosa',
     },
     {
       tier: 'frame_gold',
       frameClass: 'border-2 border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.65)]',
       circleClass: 'border-2 border-yellow-300',
-      badgeText: String(findTikTokGift(colorTierTriggers.frame_gold.giftName)?.coins || 5),
-      icon: findTikTokGift(colorTierTriggers.frame_gold.giftName)?.icon || '🫰',
+      ...getLegendTriggerDisplay(colorTierTriggers.frame_gold, '🫰', 5),
       label: 'Dorado',
     },
     {
       tier: 'frame_emerald',
       frameClass: 'border-2 border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.65)]',
       circleClass: 'border-2 border-emerald-300',
-      badgeText: String(findTikTokGift(colorTierTriggers.frame_emerald.giftName)?.coins || 10),
-      icon: findTikTokGift(colorTierTriggers.frame_emerald.giftName)?.icon || '📿',
+      ...getLegendTriggerDisplay(colorTierTriggers.frame_emerald, '📿', 10),
       label: 'Esmeralda',
     },
     {
       tier: 'frame_azure',
       frameClass: 'border-2 border-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.75)]',
       circleClass: 'border-2 border-cyan-200',
-      badgeText: String(findTikTokGift(colorTierTriggers.frame_azure.giftName)?.coins || 30),
-      icon: findTikTokGift(colorTierTriggers.frame_azure.giftName)?.icon || '🍩',
+      ...getLegendTriggerDisplay(colorTierTriggers.frame_azure, '🍩', 30),
       label: 'Diamante',
     },
     {
       tier: 'frame_mythic',
       frameClass: 'border-2 border-fuchsia-400 shadow-[0_0_14px_rgba(217,70,239,0.85)]',
       circleClass: 'border-2 border-fuchsia-300',
-      badgeText: String(findTikTokGift(colorTierTriggers.frame_mythic.giftName)?.coins || 99),
-      icon: findTikTokGift(colorTierTriggers.frame_mythic.giftName)?.icon || '👑',
+      ...getLegendTriggerDisplay(colorTierTriggers.frame_mythic, '👑', 99),
       label: 'VIP',
     },
   ];
@@ -972,11 +1004,7 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
                   </div>
 
                   <span
-                    className={`relative z-10 w-full text-center rounded-[2px] py-0.2 text-[8px] font-black leading-tight ${
-                      item.tier === 'bw_follow'
-                        ? 'bg-red-600/90 text-white'
-                        : 'bg-black/85 text-amber-300'
-                    }`}
+                    className={`relative z-10 w-full text-center rounded-[2px] px-0.5 py-0.2 text-[7px] font-black leading-tight truncate ${item.badgeClass}`}
                   >
                     {item.badgeText}
                   </span>
@@ -1020,7 +1048,9 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
                     </span>
                   </div>
 
-                  <span className="relative z-10 w-full text-center rounded-[2px] py-0.2 text-[8px] font-black leading-tight bg-black/85 text-amber-300">
+                  <span
+                    className={`relative z-10 w-full text-center rounded-[2px] px-0.5 py-0.2 text-[7px] font-black leading-tight truncate ${item.badgeClass}`}
+                  >
                     {item.badgeText}
                   </span>
                 </div>
