@@ -56,6 +56,7 @@ const COLOR_TIER_CARDS: {
   tier: ColorFrameTier;
   title: string;
   subtitle: string;
+  frameImageUrl?: string;
   boxClass: string;
   iconClass: string;
   badgeClass: string;
@@ -74,6 +75,7 @@ const COLOR_TIER_CARDS: {
     tier: 'color_rose',
     title: '2. Color Rosa',
     subtitle: 'Rosa (1 moneda)',
+    frameImageUrl: '/assets/aistudio/marco_color_rosa_d6a42d82.jpg',
     boxClass: 'border border-pink-800/70 bg-gradient-to-br from-pink-950/50 to-slate-900',
     iconClass: 'bg-pink-900/50 border-pink-700/60',
     badgeClass: 'bg-pink-600 text-white font-bold',
@@ -83,6 +85,7 @@ const COLOR_TIER_CARDS: {
     tier: 'frame_gold',
     title: '3. Marco Dorado',
     subtitle: 'Corazón Coreano (5)',
+    frameImageUrl: '/assets/aistudio/marco_dorado_cf263a83.jpg',
     boxClass: 'border border-amber-700/70 bg-gradient-to-br from-amber-950/50 to-slate-900',
     iconClass: 'bg-amber-900/50 border-amber-600/60',
     badgeClass: 'bg-amber-500 text-slate-950 font-black',
@@ -92,6 +95,7 @@ const COLOR_TIER_CARDS: {
     tier: 'frame_emerald',
     title: '4. Marco Esmeralda',
     subtitle: 'Collar / Rosa (10)',
+    frameImageUrl: '/assets/aistudio/marco_esmeralda_001081da.jpg',
     boxClass: 'border border-emerald-700/70 bg-gradient-to-br from-emerald-950/50 to-slate-900',
     iconClass: 'bg-emerald-900/50 border-emerald-600/60',
     badgeClass: 'bg-emerald-500 text-slate-950 font-black',
@@ -101,6 +105,7 @@ const COLOR_TIER_CARDS: {
     tier: 'frame_azure',
     title: '5. Marco Diamante',
     subtitle: 'Rosquilla (30)',
+    frameImageUrl: '/assets/aistudio/marco_diamante_d318155d.jpg',
     boxClass: 'border border-cyan-600/70 bg-gradient-to-br from-cyan-950/50 to-slate-900',
     iconClass: 'bg-cyan-900/50 border-cyan-500/60',
     badgeClass: 'bg-cyan-400 text-slate-950 font-black',
@@ -110,6 +115,7 @@ const COLOR_TIER_CARDS: {
     tier: 'frame_mythic',
     title: '6. Marco Místico VIP',
     subtitle: 'Corona / Gorra (99)',
+    frameImageUrl: '/assets/aistudio/MARCO_MISTICO_3ba6377f.jpg',
     boxClass: 'border-2 border-fuchsia-500/80 bg-gradient-to-br from-purple-950/70 via-fuchsia-950/40 to-slate-900',
     iconClass: 'bg-fuchsia-500/20 border-fuchsia-400/70',
     badgeClass: 'bg-fuchsia-500 text-white font-black',
@@ -368,9 +374,18 @@ export const ColorPrinterConsole: React.FC<ColorPrinterConsoleProps> = ({
                   <div key={card.tier} className={`flex flex-col justify-between rounded-2xl p-3.5 shadow-md ${card.boxClass}`}>
                     <div>
                       <div className="flex w-full items-center justify-between gap-1">
-                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg border ${card.iconClass}`}>
-                          {icon}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg border ${card.iconClass}`}>
+                            {icon}
+                          </span>
+                          {card.frameImageUrl && (
+                            <img
+                              src={card.frameImageUrl}
+                              alt={card.title}
+                              className="h-9 w-8 rounded-md object-cover border border-white/20 shadow-sm shrink-0"
+                            />
+                          )}
+                        </div>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] ${card.badgeClass}`}>
                           {card.title}
                         </span>

@@ -327,10 +327,10 @@ export const Cr7MessiBattleApp: React.FC<Cr7MessiBattleAppProps> = ({
     }
   }, [hasStartedMatch, secondsLeft, isMatchOver, players, playAudio]);
 
-  // SSE TikTok Live listener
+  // SSE TikTok Live listener scoped to cr7 app
   useEffect(() => {
     if (isObsOverlay) return;
-    const eventSource = new EventSource('/api/tiktok/stream');
+    const eventSource = new EventSource('/api/tiktok/stream?app=cr7');
 
     eventSource.onmessage = (event) => {
       try {

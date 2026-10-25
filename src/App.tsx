@@ -197,11 +197,54 @@ export default function App() {
   const [colorVipItem, setColorVipItem] = useState<ColorDonorItem>(INITIAL_VIP_CENTER);
   const [colorRecentDonors, setColorRecentDonors] = useState<ColorDonorItem[]>([]);
 
-  // ---------------- CONNECTION & SHARED STATE ----------------
-  const [isTikTokConnected, setIsTikTokConnected] = useState<boolean>(false);
-  const [isConnecting, setIsConnecting] = useState<boolean>(false);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [totalLikesCount, setTotalLikesCount] = useState<number>(0);
+  // ---------------- INDEPENDENT PER-APP CONNECTION STATE ----------------
+  const [connectionsByApp, setConnectionsByApp] = useState<
+    Record<
+      ActiveAppId,
+      {
+        isConnected: boolean;
+        isConnecting: boolean;
+        error: string | null;
+        totalLikes: number;
+      }
+    >
+  >({
+    printer: { isConnected: false, isConnecting: false, error: null, totalLikes: 0 },
+    soccer: { isConnected: false, isConnecting: false, error: null, totalLikes: 0 },
+    cr7: { isConnected: false, isConnecting: false, error: null, totalLikes: 0 },
+    color_printer: { isConnected: false, isConnecting: false, error: null, totalLikes: 0 },
+  });
+
+  const [usernamesByApp, setUsernamesByApp] = useState<Record<ActiveAppId, string>>({
+    printer: 'amyhan_stream',
+    soccer: 'amyhan_stream',
+    cr7: 'amyhan_stream',
+    color_printer: 'amyhan_stream',
+  });
+
+  const currentAppConnection = connectionsByApp[activeApp];
+  const isTikTokConnected = currentAppConnection.isConnected;
+  const isConnecting = currentAppConnection.isConnecting;
+  const connectionError = currentAppConnection.error;
+  const totalLikesCount = currentAppConnection.totalLikes;
+
+  const updateAppConnection = useCallback(
+    (
+      appId: ActiveAppId,
+      patch: Partial<{
+        isConnected: boolean;
+        isConnecting: boolean;
+        error: string | null;
+        totalLikes: number;
+      }>
+    ) => {
+      setConnectionsByApp((prev) => ({
+        ...prev,
+        [appId]: { ...prev[appId], ...patch },
+      }));
+    },
+    []
+  );
 
   const likeBuckets = useRef<
     Record<string, { count: number; avatarUrl: string; displayName: string; timer?: ReturnType<typeof setTimeout> }>
@@ -229,6 +272,13 @@ export default function App() {
   }, [settings.soundEnabled, settings.soundVolume, settings.plotterSound, settings.plotterVolume]);
 
   const updateSettings = (newSettings: Partial<StreamSettings>) => {
+    if (typeof newSettings.tiktokUsername === 'string') {
+      const targetApp = activeAppRef.current;
+      setUsernamesByApp((prev) => ({
+        ...prev,
+        [targetApp]: newSettings.tiktokUsername!,
+      }));
+    }
     setSettings((prev) => ({ ...prev, ...newSettings }));
     const shared = Object.fromEntries(
       Object.entries(newSettings).filter(([key]) => SHARED_SETTING_KEYS.includes(key as keyof StreamSettings))
@@ -240,6 +290,11 @@ export default function App() {
         body: JSON.stringify(shared),
       }).catch(() => {});
     }
+  };
+
+  const activeSettings: StreamSettings = {
+    ...settings,
+    tiktokUsername: usernamesByApp[activeApp] ?? settings.tiktokUsername,
   };
 
   // Load the shared settings saved on the server (set from the panel)
@@ -637,13 +692,14 @@ export default function App() {
     []
   );
 
-  // Real-time TikTok Live SSE (Server-Sent Events) listener
+  // Real-time TikTok Live SSE (Server-Sent Events) listener strictly scoped to the activeApp
   useEffect(() => {
     let eventSource: EventSource | null = null;
     let reconnectTimeout: any = null;
+    const subscribedApp = activeApp;
 
     function connectSSE() {
-      eventSource = new EventSource('/api/tiktok/stream');
+      eventSource = new EventSource(`/api/tiktok/stream?app=${encodeURIComponent(subscribedApp)}`);
 
       eventSource.onmessage = (event) => {
         try {
@@ -655,34 +711,45 @@ export default function App() {
             return;
           }
 
-          const currentApp = activeAppRef.current;
-          if (currentApp !== 'printer' && currentApp !== 'color_printer') {
+          // Ignore any event that is not for the currently active app
+          if (parsed.appId && parsed.appId !== subscribedApp) {
+            return;
+          }
+          if (activeAppRef.current !== subscribedApp) {
             return;
           }
 
           if (parsed.type === 'status' || parsed.type === 'connected') {
-            setIsTikTokConnected(!!parsed.data?.isConnected);
+            const connected = !!parsed.data?.isConnected;
+            const err = parsed.data?.lastError || null;
+            updateAppConnection(subscribedApp, {
+              isConnected: connected,
+              error: connected ? null : err,
+            });
+            if (parsed.data?.username) {
+              setUsernamesByApp((prev) => ({
+                ...prev,
+                [subscribedApp]: parsed.data.username,
+              }));
+            }
             if (parsed.type === 'connected') {
-              if (currentApp === 'printer') {
+              if (subscribedApp === 'printer') {
                 likeBuckets.current = {};
                 handleClearQueue();
-              } else if (currentApp === 'color_printer') {
+              } else if (subscribedApp === 'color_printer') {
                 colorLikeBuckets.current = {};
                 handleClearColorQueue();
               }
             }
-            if (parsed.data?.lastError) {
-              setConnectionError(parsed.data.lastError);
-            } else if (parsed.data?.isConnected) {
-              setConnectionError(null);
-            }
           } else if (parsed.type === 'disconnected') {
-            setIsTikTokConnected(false);
+            updateAppConnection(subscribedApp, { isConnected: false });
           } else if (parsed.type === 'error') {
-            setConnectionError(parsed.data?.error || 'Error de conexión con TikTok Live');
-            setIsTikTokConnected(false);
-          } else if (currentApp === 'printer') {
-            // ================= APP 1: PLOTTER CONTINUO =================
+            updateAppConnection(subscribedApp, {
+              isConnected: false,
+              error: parsed.data?.error || 'Error de conexión con TikTok Live',
+            });
+          } else if (subscribedApp === 'printer') {
+            // ================= APP 1 ONLY: PLOTTER CONTINUO =================
             if (parsed.type === 'follow') {
               const follow = parsed.data;
               const triggers = triggersRef.current;
@@ -730,11 +797,15 @@ export default function App() {
               }
             } else if (parsed.type === 'like') {
               const likeData = parsed.data;
-              if (likeData.totalLikes) {
-                setTotalLikesCount(likeData.totalLikes);
-              } else {
-                setTotalLikesCount((prev) => prev + (likeData.likeCount || 1));
-              }
+              setConnectionsByApp((prev) => ({
+                ...prev,
+                printer: {
+                  ...prev.printer,
+                  totalLikes: likeData.totalLikes
+                    ? likeData.totalLikes
+                    : prev.printer.totalLikes + (likeData.likeCount || 1),
+                },
+              }));
               registerLikes(
                 likeData.username,
                 likeData.nickname || likeData.username,
@@ -742,8 +813,8 @@ export default function App() {
                 likeData.likeCount || 1
               );
             }
-          } else if (currentApp === 'color_printer') {
-            // ================= APP 4: IMPRESORA A COLOR (1 A 1) =================
+          } else if (subscribedApp === 'color_printer') {
+            // ================= APP 4 ONLY: IMPRESORA A COLOR (1 A 1) =================
             if (parsed.type === 'follow') {
               const follow = parsed.data;
               const triggers = colorTriggersRef.current;
@@ -806,11 +877,15 @@ export default function App() {
               );
             } else if (parsed.type === 'like') {
               const likeData = parsed.data;
-              if (likeData.totalLikes) {
-                setTotalLikesCount(likeData.totalLikes);
-              } else {
-                setTotalLikesCount((prev) => prev + (likeData.likeCount || 1));
-              }
+              setConnectionsByApp((prev) => ({
+                ...prev,
+                color_printer: {
+                  ...prev.color_printer,
+                  totalLikes: likeData.totalLikes
+                    ? likeData.totalLikes
+                    : prev.color_printer.totalLikes + (likeData.likeCount || 1),
+                },
+              }));
               registerColorLikes(
                 likeData.username,
                 likeData.nickname || likeData.username,
@@ -836,49 +911,65 @@ export default function App() {
       if (eventSource) eventSource.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
-  }, [registerLikes, registerColorLikes]);
+  }, [activeApp, registerLikes, registerColorLikes, updateAppConnection]);
 
-  // Connect or disconnect from real TikTok Live stream
+  // Connect or disconnect from real TikTok Live stream independently for the activeApp
   const handleToggleTikTokConnection = async () => {
-    setConnectionError(null);
+    const targetApp = activeApp;
+    const targetConn = connectionsByApp[targetApp];
+    const targetUsername = usernamesByApp[targetApp] ?? settings.tiktokUsername;
 
-    if (isTikTokConnected) {
+    updateAppConnection(targetApp, { error: null });
+
+    if (targetConn.isConnected) {
       try {
-        await fetch('/api/tiktok/disconnect', { method: 'POST' });
-        setIsTikTokConnected(false);
+        await fetch('/api/tiktok/disconnect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ appId: targetApp }),
+        });
+        updateAppConnection(targetApp, { isConnected: false });
       } catch (err) {
         console.error('Error al desconectar de TikTok:', err);
       }
     } else {
-      const cleanUser = settings.tiktokUsername.replace(/^@/, '').trim();
+      const cleanUser = targetUsername.replace(/^@/, '').trim();
       if (!cleanUser) {
-        setConnectionError('Por favor ingresa tu nombre de usuario de TikTok');
+        updateAppConnection(targetApp, {
+          error: 'Por favor ingresa tu nombre de usuario de TikTok',
+        });
         return;
       }
 
-      setIsConnecting(true);
+      updateAppConnection(targetApp, { isConnecting: true });
       try {
         const res = await fetch('/api/tiktok/connect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: cleanUser }),
+          body: JSON.stringify({ username: cleanUser, appId: targetApp }),
         });
 
         const data = await res.json();
         if (!res.ok || !data.success) {
-          setConnectionError(
-            data.error || 'No se pudo conectar a TikTok Live. Verifica que estés transmitiendo en vivo actualmente.'
-          );
-          setIsTikTokConnected(false);
+          updateAppConnection(targetApp, {
+            isConnected: false,
+            error:
+              data.error ||
+              'No se pudo conectar a TikTok Live. Verifica que estés transmitiendo en vivo actualmente.',
+          });
         } else {
-          setIsTikTokConnected(true);
-          setConnectionError(null);
+          updateAppConnection(targetApp, {
+            isConnected: true,
+            error: null,
+          });
         }
       } catch (err: any) {
-        setConnectionError('Error de red al conectar con el servidor.');
-        setIsTikTokConnected(false);
+        updateAppConnection(targetApp, {
+          isConnected: false,
+          error: 'Error de red al conectar con el servidor.',
+        });
       } finally {
-        setIsConnecting(false);
+        updateAppConnection(targetApp, { isConnecting: false });
       }
     }
   };
@@ -936,6 +1027,20 @@ export default function App() {
   }, []);
 
   const handleSelectApp = (appId: ActiveAppId) => {
+    // Ensure inactive apps stop any pending print/drawing queue when switching
+    if (appId !== 'printer') {
+      setDrawingQueue([]);
+      setActiveDrawing(null);
+      Object.values(likeBuckets.current).forEach((b) => b.timer && clearTimeout(b.timer));
+      likeBuckets.current = {};
+    }
+    if (appId !== 'color_printer') {
+      setColorQueue([]);
+      setColorActiveDonor(null);
+      Object.values(colorLikeBuckets.current).forEach((b) => b.timer && clearTimeout(b.timer));
+      colorLikeBuckets.current = {};
+    }
+
     setActiveApp(appId);
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search);
@@ -945,13 +1050,19 @@ export default function App() {
   };
 
   const handleSimulateLikes = (count = 1) => {
-    setTotalLikesCount((prev) => prev + count);
+    setConnectionsByApp((prev) => ({
+      ...prev,
+      [activeApp]: {
+        ...prev[activeApp],
+        totalLikes: prev[activeApp].totalLikes + count,
+      },
+    }));
     const randomAvatar = PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)];
     const sampleNames = ['carlos_live', 'sofia_star', 'ana_taps', 'mateo_tiktok', 'lucia_fans'];
     const randomName = sampleNames[Math.floor(Math.random() * sampleNames.length)];
     if (activeApp === 'color_printer') {
       registerColorLikes(randomName, randomName, randomAvatar.dataUrl, count);
-    } else {
+    } else if (activeApp === 'printer') {
       registerLikes(randomName, randomName, randomAvatar.dataUrl, count);
     }
   };
@@ -962,7 +1073,7 @@ export default function App() {
       <SouthAmericanClubBattleApp
         isObsOverlay={true}
         isTikTokConnected={isTikTokConnected}
-        tiktokUsername={settings.tiktokUsername}
+        tiktokUsername={activeSettings.tiktokUsername}
       />
     );
   }
@@ -972,7 +1083,7 @@ export default function App() {
       <Cr7MessiBattleApp
         isObsOverlay={true}
         isTikTokConnected={isTikTokConnected}
-        tiktokUsername={settings.tiktokUsername}
+        tiktokUsername={activeSettings.tiktokUsername}
       />
     );
   }
@@ -1018,24 +1129,24 @@ export default function App() {
         activeApp={activeApp}
         onSelectApp={handleSelectApp}
         isTikTokConnected={isTikTokConnected}
-        tiktokUsername={settings.tiktokUsername}
+        tiktokUsername={activeSettings.tiktokUsername}
       />
 
       {activeApp === 'soccer' ? (
         <SouthAmericanClubBattleApp
           isObsOverlay={false}
           isTikTokConnected={isTikTokConnected}
-          tiktokUsername={settings.tiktokUsername}
+          tiktokUsername={activeSettings.tiktokUsername}
         />
       ) : activeApp === 'cr7' ? (
         <Cr7MessiBattleApp
           isObsOverlay={false}
           isTikTokConnected={isTikTokConnected}
-          tiktokUsername={settings.tiktokUsername}
+          tiktokUsername={activeSettings.tiktokUsername}
           isConnecting={isConnecting}
           connectionError={connectionError}
           onToggleTikTokConnection={handleToggleTikTokConnection}
-          settings={settings}
+          settings={activeSettings}
           onUpdateSettings={updateSettings}
         />
       ) : activeApp === 'color_printer' ? (
@@ -1048,12 +1159,12 @@ export default function App() {
           />
 
           <main className="flex-1 p-4 lg:p-6 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            {/* LEFT COLUMN: ASURE PRINT 3D COLOR PRINTER SCENE (5 cols) */}
+            {/* LEFT COLUMN: PHOTO PRINTER 3D COLOR PRINTER SCENE (5 cols) */}
             <section className="lg:col-span-5 flex flex-col items-center justify-start min-h-[680px]">
               <div className="w-full max-w-[460px] flex items-center justify-between mb-2 px-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-400 flex items-center gap-1.5">
                   <Printer className="h-3.5 w-3.5" />
-                  <span>Impresora a Color 1 a 1 (ASURE PRINT)</span>
+                  <span>Impresora a Color 1 a 1 (PHOTO PRINTER)</span>
                 </span>
                 {colorQueue.length > 0 && (
                   <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-mono font-bold text-amber-300 border border-amber-500/30">
@@ -1077,7 +1188,7 @@ export default function App() {
             {/* RIGHT COLUMN: COLOR PRINTER CONSOLE (7 cols) */}
             <section className="lg:col-span-7 flex flex-col">
               <ColorPrinterConsole
-                settings={settings}
+                settings={activeSettings}
                 colorTierTriggers={colorTriggers}
                 onUpdateSettings={updateSettings}
                 onTriggerColorPrint={handleTriggerColorPrint}
@@ -1135,7 +1246,7 @@ export default function App() {
             {/* RIGHT COLUMN: STREAMER CONSOLE, SIMULATOR & SETTINGS (7 cols) */}
             <section className="lg:col-span-7 flex flex-col">
               <StreamerConsole
-                settings={settings}
+                settings={activeSettings}
                 onUpdateSettings={updateSettings}
                 onTriggerGift={handleTriggerGift}
                 onClearQueue={handleClearQueue}

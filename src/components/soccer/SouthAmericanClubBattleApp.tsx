@@ -49,10 +49,10 @@ export const SouthAmericanClubBattleApp: React.FC<SouthAmericanClubBattleAppProp
     return () => clearInterval(interval);
   }, [isTimerRunning, secondsLeft]);
 
-  // Handle SSE TikTok events
+  // Handle SSE TikTok events scoped to soccer app
   useEffect(() => {
     if (isObsOverlay) return;
-    const eventSource = new EventSource('/api/tiktok/stream');
+    const eventSource = new EventSource('/api/tiktok/stream?app=soccer');
 
     eventSource.onmessage = (event) => {
       try {

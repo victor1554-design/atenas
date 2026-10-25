@@ -22,38 +22,40 @@ interface ColorPhotoPrinterProps {
 
 type PrintCyclePhase = 'idle' | 'printing' | 'flying' | 'celebrating';
 
-// Exact flight offsets from the printer output slot (center) to each of the 8 wall slots
+// Exact flight offsets from the bottom printer output slot (center, y=594px) to each of the 8 enlarged wall slots
 const WALL_SLOT_FLIGHT_OFFSETS: { x: number; y: number }[] = [
-  { x: -168, y: -216 }, // Slot 0: Left Top-Left
-  { x: -94, y: -216 },  // Slot 1: Left Top-Right
-  { x: -168, y: -124 }, // Slot 2: Left Bottom-Left
-  { x: -94, y: -124 },  // Slot 3: Left Bottom-Right
-  { x: 94, y: -216 },   // Slot 4: Right Top-Left
-  { x: 168, y: -216 },  // Slot 5: Right Top-Right
-  { x: 94, y: -124 },   // Slot 6: Right Bottom-Left
-  { x: 168, y: -124 },  // Slot 7: Right Bottom-Right
+  { x: -172, y: -466 }, // Slot 0: Left Top-Left
+  { x: -92, y: -466 },  // Slot 1: Left Top-Right
+  { x: -172, y: -284 }, // Slot 2: Left Bottom-Left
+  { x: -92, y: -284 },  // Slot 3: Left Bottom-Right
+  { x: 92, y: -466 },   // Slot 4: Right Top-Left
+  { x: 172, y: -466 },  // Slot 5: Right Top-Right
+  { x: 92, y: -284 },   // Slot 6: Right Bottom-Left
+  { x: 172, y: -284 },  // Slot 7: Right Bottom-Right
 ];
 
-const VIP_CENTER_FLIGHT_OFFSET = { x: 0, y: -172 };
+const VIP_CENTER_FLIGHT_OFFSET = { x: 0, y: -376 };
 
-// Exact screen coordinates (left %, top px) of the center of each wall slot's image
+// Exact screen coordinates (left %, top px) of the center of each enlarged wall slot's image
 const WALL_SLOT_SCREEN_COORDS: { left: string; top: string }[] = [
-  { left: '10.5%', top: '84px' },  // Slot 0: Left Top-Left (B/W)
-  { left: '27.5%', top: '84px' },  // Slot 1: Left Top-Right (B/W)
-  { left: '10.5%', top: '178px' }, // Slot 2: Left Bottom-Left (B/W)
-  { left: '27.5%', top: '178px' }, // Slot 3: Left Bottom-Right (B/W)
-  { left: '72.5%', top: '84px' },  // Slot 4: Right Top-Left (Rosa)
-  { left: '89.5%', top: '84px' },  // Slot 5: Right Top-Right (Dorado)
-  { left: '72.5%', top: '178px' }, // Slot 6: Right Bottom-Left (Esmeralda)
-  { left: '89.5%', top: '178px' }, // Slot 7: Right Bottom-Right (Diamante)
+  { left: '10.5%', top: '128px' }, // Slot 0: Left Top-Left (B/W)
+  { left: '27.5%', top: '128px' }, // Slot 1: Left Top-Right (B/W)
+  { left: '10.5%', top: '310px' }, // Slot 2: Left Bottom-Left (B/W)
+  { left: '27.5%', top: '310px' }, // Slot 3: Left Bottom-Right (B/W)
+  { left: '72.5%', top: '128px' }, // Slot 4: Right Top-Left (Rosa)
+  { left: '89.5%', top: '128px' }, // Slot 5: Right Top-Right (Dorado)
+  { left: '72.5%', top: '310px' }, // Slot 6: Right Bottom-Left (Esmeralda)
+  { left: '89.5%', top: '310px' }, // Slot 7: Right Bottom-Right (Diamante)
 ];
 
-const VIP_CENTER_SCREEN_COORDS = { left: '50%', top: '131px' };
+const VIP_CENTER_SCREEN_COORDS = { left: '50%', top: '218px' };
 
 const FRAME_STYLES: Record<
   ColorFrameTier,
   {
     name: string;
+    frameImageUrl?: string;
+    frameScale?: string;
     sheetBg: string;
     outerBorder: string;
     innerBorder: string;
@@ -81,65 +83,75 @@ const FRAME_STYLES: Record<
   },
   color_rose: {
     name: 'Color Rosa',
+    frameImageUrl: '/assets/aistudio/marco_color_rosa_d6a42d82.jpg',
+    frameScale: 'scale(1.26, 1.15)',
     sheetBg: 'linear-gradient(160deg, #FFF0F5 0%, #FFD1E3 55%, #FFB8D2 100%)',
     outerBorder: 'border-2 border-pink-400',
-    innerBorder: 'border border-white/80',
-    ringBorder: 'border-[3px] border-white shadow-[0_0_12px_rgba(244,63,94,0.45)]',
-    bannerBg: 'bg-white/95 border border-pink-300 text-rose-700 shadow-sm',
-    bannerText: 'text-rose-700 font-extrabold',
-    subText: 'text-rose-500',
+    innerBorder: 'border border-transparent',
+    ringBorder: 'border-[3px] border-pink-500 shadow-[0_0_12px_rgba(244,63,94,0.55)]',
+    bannerBg: 'bg-pink-950/90 border border-pink-300 text-pink-100 shadow-sm',
+    bannerText: 'text-pink-100 font-extrabold',
+    subText: 'text-rose-700 bg-white/85 px-1.5 rounded-full',
     badgeBg: 'bg-pink-600 text-white',
     isGrayscale: false,
     coinsLabel: '1',
   },
   frame_gold: {
     name: 'Marco Dorado',
+    frameImageUrl: '/assets/aistudio/marco_dorado_cf263a83.jpg',
+    frameScale: 'scale(1.48, 1.12)',
     sheetBg: 'linear-gradient(160deg, #FFFBEB 0%, #FDE68A 50%, #F59E0B 100%)',
-    outerBorder: 'border-2 border-amber-500',
-    innerBorder: 'border border-yellow-200',
-    ringBorder: 'border-[3px] border-amber-400 shadow-[0_0_14px_rgba(245,158,11,0.65)]',
-    bannerBg: 'bg-amber-950/90 border border-amber-400 text-amber-200 shadow-sm',
+    outerBorder: 'border-2 border-amber-400',
+    innerBorder: 'border border-transparent',
+    ringBorder: 'border-[3px] border-amber-500 shadow-[0_0_14px_rgba(245,158,11,0.75)]',
+    bannerBg: 'bg-amber-950/95 border border-amber-400 text-amber-200 shadow-sm',
     bannerText: 'text-amber-200 font-extrabold',
-    subText: 'text-amber-300',
+    subText: 'text-amber-900 bg-amber-100/90 px-1.5 rounded-full',
     badgeBg: 'bg-amber-500 text-slate-950',
     isGrayscale: false,
     coinsLabel: '5',
   },
   frame_emerald: {
     name: 'Marco Esmeralda',
+    frameImageUrl: '/assets/aistudio/marco_esmeralda_001081da.jpg',
+    frameScale: 'scale(1.28, 1.25)',
     sheetBg: 'linear-gradient(160deg, #ECFDF5 0%, #6EE7B7 45%, #059669 100%)',
     outerBorder: 'border-2 border-emerald-400',
-    innerBorder: 'border border-emerald-200/80',
-    ringBorder: 'border-[3px] border-emerald-300 shadow-[0_0_14px_rgba(16,185,129,0.7)]',
-    bannerBg: 'bg-emerald-950/90 border border-emerald-400 text-emerald-200 shadow-sm',
+    innerBorder: 'border border-transparent',
+    ringBorder: 'border-[3px] border-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.75)]',
+    bannerBg: 'bg-emerald-950/95 border border-emerald-400 text-emerald-200 shadow-sm',
     bannerText: 'text-emerald-100 font-extrabold',
-    subText: 'text-emerald-300',
+    subText: 'text-emerald-900 bg-emerald-100/90 px-1.5 rounded-full',
     badgeBg: 'bg-emerald-500 text-slate-950',
     isGrayscale: false,
     coinsLabel: '10',
   },
   frame_azure: {
     name: 'Marco Diamante',
+    frameImageUrl: '/assets/aistudio/marco_diamante_d318155d.jpg',
+    frameScale: 'scale(1.34, 1.32)',
     sheetBg: 'linear-gradient(160deg, #EFF6FF 0%, #60A5FA 48%, #1D4ED8 100%)',
     outerBorder: 'border-2 border-cyan-300',
-    innerBorder: 'border border-sky-200/80',
-    ringBorder: 'border-[3px] border-amber-300 shadow-[0_0_16px_rgba(56,189,248,0.85)]',
-    bannerBg: 'bg-slate-950/90 border border-cyan-400 text-cyan-200 shadow-sm',
+    innerBorder: 'border border-transparent',
+    ringBorder: 'border-[3px] border-cyan-400 shadow-[0_0_16px_rgba(56,189,248,0.85)]',
+    bannerBg: 'bg-slate-950/95 border border-cyan-400 text-cyan-200 shadow-sm',
     bannerText: 'text-cyan-100 font-black',
-    subText: 'text-amber-300',
+    subText: 'text-slate-900 bg-cyan-100/90 px-1.5 rounded-full',
     badgeBg: 'bg-cyan-500 text-slate-950',
     isGrayscale: false,
     coinsLabel: '30',
   },
   frame_mythic: {
     name: 'Marco Místico VIP',
+    frameImageUrl: '/assets/aistudio/MARCO_MISTICO_3ba6377f.jpg',
+    frameScale: 'scale(1.04, 1.04)',
     sheetBg: 'linear-gradient(160deg, #2E1065 0%, #7E22CE 50%, #C026D3 100%)',
     outerBorder: 'border-2 border-fuchsia-400',
-    innerBorder: 'border border-purple-300/80',
+    innerBorder: 'border border-transparent',
     ringBorder: 'border-[3px] border-fuchsia-300 shadow-[0_0_20px_rgba(217,70,239,0.95)]',
     bannerBg: 'bg-purple-950/95 border border-fuchsia-400 text-fuchsia-100 shadow-md',
     bannerText: 'text-fuchsia-100 font-black',
-    subText: 'text-amber-300',
+    subText: 'text-amber-300 bg-purple-950/85 px-1.5 rounded-full',
     badgeBg: 'bg-fuchsia-500 text-white',
     isGrayscale: false,
     coinsLabel: '99',
@@ -510,69 +522,44 @@ const PrintedSheetCard: React.FC<{
   return (
     <div
       className={`relative select-none overflow-hidden rounded-sm shadow-xl ${style.outerBorder} ${
-        isWall ? 'w-[68px] h-[84px] p-1' : 'w-[172px] h-[196px] p-2.5'
+        isWall ? 'w-[76px] h-[170px] p-1.5' : 'w-[172px] h-[196px] p-3.5'
       }`}
       style={{ background: style.sheetBg }}
     >
-      {/* Inner decorative frame border */}
+      {/* Real Uploaded Frame Image Background Layer (Rosa, Dorado, Esmeralda, Diamante, Místico VIP) */}
+      {style.frameImageUrl && (
+        <img
+          src={style.frameImageUrl}
+          alt={style.name}
+          className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0"
+          style={{
+            transform: style.frameScale || 'scale(1.2, 1.2)',
+            transformOrigin: 'center center',
+          }}
+        />
+      )}
+
+      {/* Inner decorative frame border & content */}
       <div
-        className={`relative w-full h-full flex flex-col items-center justify-between rounded-[2px] ${style.innerBorder} ${
-          isWall ? 'p-1' : 'p-2'
+        className={`relative z-10 w-full h-full flex flex-col items-center justify-between rounded-[2px] ${style.innerBorder} ${
+          isWall ? 'px-1 py-2' : 'p-2'
         }`}
       >
         {/* Corner flourishes for B/W vintage frame */}
-        {item.frameTier === 'bw_follow' && !isWall && (
+        {item.frameTier === 'bw_follow' && (
           <>
-            <span className="absolute top-1 left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-stone-800" />
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-stone-800" />
-            <span className="absolute bottom-1 left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-stone-800" />
-            <span className="absolute bottom-1 right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-stone-800" />
+            <span className="absolute top-1 left-1 w-2 h-2 border-t-2 border-l-2 border-stone-800" />
+            <span className="absolute top-1 right-1 w-2 h-2 border-t-2 border-r-2 border-stone-800" />
+            <span className="absolute bottom-1 left-1 w-2 h-2 border-b-2 border-l-2 border-stone-800" />
+            <span className="absolute bottom-1 right-1 w-2 h-2 border-b-2 border-r-2 border-stone-800" />
           </>
         )}
 
-        {/* Decorative floating petals/sparkles for Color Rose & higher frames */}
-        {item.frameTier === 'color_rose' && !isWall && (
-          <>
-            <span className="absolute top-1.5 left-2 text-[10px] opacity-80">🌸</span>
-            <span className="absolute top-2 right-2 text-[10px] opacity-80">✨</span>
-            <span className="absolute bottom-12 left-1.5 text-[9px] opacity-75">🌸</span>
-          </>
-        )}
-
-        {item.frameTier === 'frame_gold' && !isWall && (
-          <>
-            <span className="absolute top-1 left-2 text-[11px]">⭐</span>
-            <span className="absolute top-1 right-2 text-[11px]">🌟</span>
-          </>
-        )}
-
-        {item.frameTier === 'frame_emerald' && !isWall && (
-          <>
-            <span className="absolute top-1 left-2 text-[11px]">💎</span>
-            <span className="absolute top-1 right-2 text-[11px]">🍀</span>
-          </>
-        )}
-
-        {item.frameTier === 'frame_azure' && !isWall && (
-          <>
-            <span className="absolute top-1 left-2 text-[11px]">🍩</span>
-            <span className="absolute top-1 right-2 text-[11px]">⚡</span>
-          </>
-        )}
-
-        {item.frameTier === 'frame_mythic' && !isWall && (
-          <>
-            <span className="absolute top-0.5 left-1/2 -translate-x-1/2 text-xs">👑</span>
-            <span className="absolute top-2 left-2 text-[10px]">🔮</span>
-            <span className="absolute top-2 right-2 text-[10px]">✨</span>
-          </>
-        )}
-
-        {/* Center Portrait Circle + Side Emblems */}
-        <div className="relative flex items-center justify-center mt-0.5">
+        {/* Center Portrait Circle + Side Emblems inside the frame window */}
+        <div className={`relative flex items-center justify-center ${isWall ? 'mt-3' : 'mt-1'}`}>
           <div
             className={`relative rounded-full overflow-hidden bg-stone-200 ${style.ringBorder} ${
-              isWall ? 'w-10 h-10' : 'w-[96px] h-[96px]'
+              isWall ? 'w-[56px] h-[56px]' : 'w-[86px] h-[86px]'
             }`}
           >
             <img
@@ -595,10 +582,10 @@ const PrintedSheetCard: React.FC<{
 
           {!isWall && item.frameTier === 'color_rose' && (
             <>
-              <div className="absolute -bottom-1 -left-2.5 w-6 h-6 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 border-2 border-white flex items-center justify-center text-[11px] shadow-md">
+              <div className="absolute -bottom-1 -left-2 w-5 h-5 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 border-2 border-white flex items-center justify-center text-[10px] shadow-md">
                 ❤️
               </div>
-              <div className="absolute -bottom-1 -right-2.5 w-6 h-6 rounded-full bg-gradient-to-br from-pink-400 to-rose-600 border-2 border-white flex items-center justify-center text-[11px] shadow-md">
+              <div className="absolute -bottom-1 -right-2 w-5 h-5 rounded-full bg-gradient-to-br from-pink-400 to-rose-600 border-2 border-white flex items-center justify-center text-[10px] shadow-md">
                 💖
               </div>
             </>
@@ -606,10 +593,10 @@ const PrintedSheetCard: React.FC<{
 
           {!isWall && item.frameTier !== 'bw_follow' && item.frameTier !== 'color_rose' && (
             <>
-              <div className="absolute -bottom-1 -left-2.5 w-6 h-6 rounded-full bg-slate-900/90 border-2 border-amber-300 flex items-center justify-center text-[11px] shadow-md">
+              <div className="absolute -bottom-1 -left-2 w-5 h-5 rounded-full bg-slate-900/90 border-2 border-amber-300 flex items-center justify-center text-[10px] shadow-md">
                 {item.giftIcon}
               </div>
-              <div className="absolute -bottom-1 -right-2.5 w-6 h-6 rounded-full bg-amber-400 border-2 border-white flex items-center justify-center text-[9px] font-black text-slate-950 shadow-md">
+              <div className="absolute -bottom-1 -right-2 w-5 h-5 rounded-full bg-amber-400 border-2 border-white flex items-center justify-center text-[8px] font-black text-slate-950 shadow-md">
                 {style.coinsLabel}
               </div>
             </>
@@ -617,10 +604,10 @@ const PrintedSheetCard: React.FC<{
         </div>
 
         {/* Bottom Ribbon Banner with Username & Gift caption */}
-        <div className="w-full flex flex-col items-center mt-1">
+        <div className={`w-full flex flex-col items-center ${isWall ? 'mb-1' : 'mt-0.5'}`}>
           <div
-            className={`w-full rounded px-1.5 text-center truncate ${style.bannerBg} ${
-              isWall ? 'py-0.5 text-[7px]' : 'py-1 text-xs'
+            className={`w-full rounded px-1 text-center truncate ${style.bannerBg} ${
+              isWall ? 'py-0.5 text-[8.5px]' : 'py-0.5 text-[11px]'
             }`}
           >
             <span className={`block truncate ${style.bannerText}`}>
@@ -628,13 +615,13 @@ const PrintedSheetCard: React.FC<{
             </span>
           </div>
 
-          {!isWall && (
-            <div
-              className={`mt-0.5 flex items-center justify-center gap-1 text-[10px] font-bold truncate ${style.subText}`}
-            >
-              <span>{item.actionText}</span>
-            </div>
-          )}
+          <div
+            className={`mt-0.5 flex items-center justify-center gap-0.5 font-bold truncate max-w-full ${
+              isWall ? 'text-[7px]' : 'text-[9px]'
+            } ${style.subText}`}
+          >
+            <span className="truncate">{item.actionText}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -657,9 +644,11 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
   const [manualCameraZoom, setManualCameraZoom] = useState<'auto' | 'close' | 'room'>('auto');
 
   const stopSoundRef = useRef<(() => void) | null>(null);
+  const bwSlotCursorRef = useRef<number>(0);
+  const donorSlotMapRef = useRef<Record<string, number>>({});
 
-  // Fixed wall slot mapping per tier:
-  // - Left side (0): Blanco y Negro (bw_follow)
+  // Wall slot mapping per tier:
+  // - Left side (0..3): Blanco y Negro (bw_follow) cycles sequentially 0 -> 1 -> 2 -> 3 -> 0
   // - Right side (4..7): Rosa (4), Dorado (5), Esmeralda (6), Diamante (7)
   // - Center VIP: Marco Místico VIP (frame_mythic)
   const getFixedSlotForTier = (tier: ColorFrameTier): number => {
@@ -714,8 +703,18 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
     let flightTimer: ReturnType<typeof setTimeout> | null = null;
     let completeTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // Each tier always flies to its own dedicated position and replaces the item there
-    const assignedSlot = getFixedSlotForTier(activeDonor.frameTier);
+    // For 'bw_follow' (Seguir), cycle through the 4 left frames (0 -> 1 -> 2 -> 3 -> 0).
+    // Other tiers fly to their dedicated fixed slot.
+    let assignedSlot: number;
+    if (activeDonor.frameTier === 'bw_follow') {
+      if (donorSlotMapRef.current[activeDonor.id] === undefined) {
+        donorSlotMapRef.current[activeDonor.id] = bwSlotCursorRef.current;
+        bwSlotCursorRef.current = (bwSlotCursorRef.current + 1) % 4;
+      }
+      assignedSlot = donorSlotMapRef.current[activeDonor.id];
+    } else {
+      assignedSlot = getFixedSlotForTier(activeDonor.frameTier);
+    }
     setTargetSlotIndex(assignedSlot);
 
     setPrintProgress(0);
@@ -938,42 +937,96 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
           </div>
         </div>
 
-        {/* RIGHT-SIDE VERTICAL LEGEND COLUMN:
-            6 Transparent SQUARE Frames + Empty Circle inside + Gift Donation Icon & Badge */}
-        <div className="absolute right-2 top-12 z-30 flex flex-col gap-2 pointer-events-none">
-          {rightLegendTiers.map((item) => (
-            <div key={item.tier} className="relative flex flex-col items-center">
-              {/* Transparent Square Frame ("cuadrado no circulo", "transparente las 6") */}
-              <div
-                className={`relative w-12 h-14 rounded-[4px] bg-transparent flex flex-col items-center justify-between p-1 ${item.frameClass}`}
-              >
-                {/* Top frame tier mini label */}
-                <span className="text-[7px] font-black uppercase tracking-tighter text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] leading-none">
-                  {item.label}
-                </span>
-
-                {/* Transparent Circle inside the square frame showing only the circle + donation icon */}
+        {/* LEFT 3 TRANSPARENT LEGEND FRAMES (B/N, Rosa, Dorado) — Aligned alongside the printer at the bottom */}
+        <div className="absolute left-2 bottom-[14px] z-30 flex flex-col gap-2.5 pointer-events-none">
+          {rightLegendTiers.slice(0, 3).map((item) => {
+            const tierStyle = FRAME_STYLES[item.tier];
+            return (
+              <div key={item.tier} className="relative flex flex-col items-center">
                 <div
-                  className={`w-7 h-7 rounded-full bg-transparent flex items-center justify-center ${item.circleClass}`}
+                  className={`relative w-12 h-14 rounded-[4px] bg-transparent overflow-hidden flex flex-col items-center justify-between p-1 ${item.frameClass}`}
                 >
-                  <span className="text-sm drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-                    {item.icon}
+                  {tierStyle?.frameImageUrl && (
+                    <img
+                      src={tierStyle.frameImageUrl}
+                      alt={item.label}
+                      className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0"
+                      style={{
+                        transform: tierStyle.frameScale || 'scale(1.2, 1.2)',
+                        clipPath:
+                          'polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 18% 16%, 18% 84%, 82% 84%, 82% 16%, 18% 16%)',
+                      }}
+                    />
+                  )}
+
+                  <span className="relative z-10 text-[7px] font-black uppercase tracking-tighter text-white/95 bg-black/55 px-1 rounded-[2px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] leading-none">
+                    {item.label}
+                  </span>
+
+                  <div
+                    className={`relative z-10 w-7 h-7 rounded-full bg-black/45 flex items-center justify-center ${item.circleClass}`}
+                  >
+                    <span className="text-sm drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                      {item.icon}
+                    </span>
+                  </div>
+
+                  <span
+                    className={`relative z-10 w-full text-center rounded-[2px] py-0.2 text-[8px] font-black leading-tight ${
+                      item.tier === 'bw_follow'
+                        ? 'bg-red-600/90 text-white'
+                        : 'bg-black/85 text-amber-300'
+                    }`}
+                  >
+                    {item.badgeText}
                   </span>
                 </div>
-
-                {/* Donation badge inside bottom of square frame */}
-                <span
-                  className={`w-full text-center rounded-[2px] py-0.2 text-[8px] font-black leading-tight ${
-                    item.tier === 'bw_follow'
-                      ? 'bg-red-600/90 text-white'
-                      : 'bg-black/80 text-amber-300'
-                  }`}
-                >
-                  {item.badgeText}
-                </span>
               </div>
-            </div>
-          ))}
+            );
+          })}
+        </div>
+
+        {/* RIGHT 3 TRANSPARENT LEGEND FRAMES (Esmeralda, Diamante, VIP) — Aligned alongside the printer at the bottom */}
+        <div className="absolute right-2 bottom-[14px] z-30 flex flex-col gap-2.5 pointer-events-none">
+          {rightLegendTiers.slice(3, 6).map((item) => {
+            const tierStyle = FRAME_STYLES[item.tier];
+            return (
+              <div key={item.tier} className="relative flex flex-col items-center">
+                <div
+                  className={`relative w-12 h-14 rounded-[4px] bg-transparent overflow-hidden flex flex-col items-center justify-between p-1 ${item.frameClass}`}
+                >
+                  {tierStyle?.frameImageUrl && (
+                    <img
+                      src={tierStyle.frameImageUrl}
+                      alt={item.label}
+                      className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0"
+                      style={{
+                        transform: tierStyle.frameScale || 'scale(1.2, 1.2)',
+                        clipPath:
+                          'polygon(evenodd, 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 18% 16%, 18% 84%, 82% 84%, 82% 16%, 18% 16%)',
+                      }}
+                    />
+                  )}
+
+                  <span className="relative z-10 text-[7px] font-black uppercase tracking-tighter text-white/95 bg-black/55 px-1 rounded-[2px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] leading-none">
+                    {item.label}
+                  </span>
+
+                  <div
+                    className={`relative z-10 w-7 h-7 rounded-full bg-black/45 flex items-center justify-center ${item.circleClass}`}
+                  >
+                    <span className="text-sm drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                      {item.icon}
+                    </span>
+                  </div>
+
+                  <span className="relative z-10 w-full text-center rounded-[2px] py-0.2 text-[8px] font-black leading-tight bg-black/85 text-amber-300">
+                    {item.badgeText}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* =====================================================================
@@ -1002,19 +1055,19 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
         </AnimatePresence>
 
         {/* CAMERA RIG:
-            Adjusted zoom-in scale & origin so the entire 100% printed sheet is completely visible without cutting off at the bottom! */}
+            When printing, smoothly lifts the bottom printer up so the entire 196px printed sheet slides out 100% visible without cutting off */}
         <div
           className="relative w-full h-full transition-transform duration-500 ease-out"
           style={{
             transform: isZoomedIn
-              ? 'scale(1.22) translateY(-15%)'
-              : 'scale(1) translateY(0%)',
-            transformOrigin: '50% 50%',
+              ? 'translateY(-225px) scale(1.08)'
+              : 'translateY(0px) scale(1)',
+            transformOrigin: '50% 0%',
           }}
         >
-          {/* 1. WOODEN STUDIO WALL & GALLERY FRAMES */}
+          {/* 1. WOODEN STUDIO WALL & ENLARGED GALLERY FRAMES */}
           {!obsMode && (
-            <div className="absolute inset-x-0 top-0 h-[365px] z-20">
+            <div className="absolute inset-0 z-20">
               {/* Wood planks background layer */}
               <div
                 className="absolute inset-0 overflow-hidden pointer-events-none"
@@ -1023,18 +1076,18 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
                     'repeating-linear-gradient(90deg, #4A2F1D 0px, #4A2F1D 18px, #3B2314 18px, #3B2314 22px, #563824 22px, #563824 38px)',
                 }}
               >
-                {/* Warm studio ceiling vignette */}
+                {/* Warm studio lighting vignette */}
                 <div
                   className="absolute inset-0"
                   style={{
                     background:
-                      'radial-gradient(circle at 50% 45%, rgba(255,215,150,0.18) 0%, rgba(15,10,6,0.55) 100%)',
+                      'radial-gradient(circle at 50% 42%, rgba(255,215,150,0.18) 0%, rgba(15,10,6,0.62) 100%)',
                   }}
                 />
               </div>
 
-              {/* WALL GALLERY: Left 2x2 Grid, Center Giant Purple VIP Frame, Right 2x2 Grid */}
-              <div className="relative z-10 mt-11 px-3 flex items-center justify-between gap-1.5">
+              {/* WALL GALLERY: Enlarged Left 2x2 Grid, Enlarged Center Giant VIP Místico Frame, Enlarged Right 2x2 Grid */}
+              <div className="relative z-10 mt-10 px-1.5 flex items-center justify-between gap-1">
                 {/* Left 2x2 Wall Frames (Slots 0..3: Blanco y Negro) */}
                 <div className="grid grid-cols-2 gap-1.5">
                   {leftWallItems.map((item, idx) => {
@@ -1066,7 +1119,7 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
                   })}
                 </div>
 
-                {/* CENTER GIANT NEON PURPLE VIP PORTAL FRAME */}
+                {/* CENTER ENLARGED GIANT NEON PURPLE VIP PORTAL FRAME (MARCO MÍSTICO) */}
                 <div
                   className={`relative shrink-0 ${
                     activeDonor &&
@@ -1077,7 +1130,7 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
                   }`}
                 >
                   <div
-                    className={`relative w-[132px] h-[178px] rounded-lg p-1.5 bg-gradient-to-b from-purple-950 via-[#1E0936] to-indigo-950 border-2 flex flex-col items-center justify-between overflow-hidden transition-all duration-300 ${
+                    className={`relative w-[138px] h-[352px] rounded-lg p-3 bg-purple-950 border-2 flex flex-col items-center justify-between overflow-hidden transition-all duration-300 ${
                       activeDonor &&
                       cyclePhase === 'celebrating' &&
                       activeDonor.frameTier === 'frame_mythic'
@@ -1085,18 +1138,26 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
                         : 'border-fuchsia-400 shadow-[0_0_25px_rgba(192,38,211,0.8)]'
                     }`}
                   >
-                    <div className="text-xs tracking-widest text-fuchsia-300 font-black flex items-center gap-1">
+                    {/* Uploaded Marco Místico VIP Frame Image */}
+                    <img
+                      src="/assets/aistudio/MARCO_MISTICO_3ba6377f.jpg"
+                      alt="Marco Místico VIP"
+                      className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0"
+                      style={{ transform: 'scale(1.04, 1.04)' }}
+                    />
+
+                    <div className="relative z-10 mt-1 text-xs tracking-widest text-fuchsia-200 bg-purple-950/90 border border-fuchsia-400/70 px-2.5 py-1 rounded-full font-black flex items-center gap-1 shadow">
                       <span>👑</span>
                       <span className="text-[9px] uppercase">VIP MÍSTICO</span>
                       <span>👑</span>
                     </div>
 
-                    <div className="relative flex items-center justify-center my-0.5">
+                    <div className="relative z-10 flex items-center justify-center my-1">
                       <div
-                        className="absolute -inset-2 rounded-full border border-dashed border-fuchsia-400/70 animate-spin"
+                        className="absolute -inset-2 rounded-full border-2 border-dashed border-fuchsia-300/80 animate-spin"
                         style={{ animationDuration: '14s' }}
                       />
-                      <div className="relative w-20 h-20 rounded-full border-2 border-fuchsia-300 shadow-[0_0_18px_rgba(232,121,249,0.95)] overflow-hidden bg-purple-900">
+                      <div className="relative w-24 h-24 rounded-full border-[3px] border-fuchsia-300 shadow-[0_0_22px_rgba(232,121,249,0.95)] overflow-hidden bg-purple-900">
                         <img
                           src={displayedVipItem.avatarUrl}
                           alt={displayedVipItem.displayName}
@@ -1105,11 +1166,11 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
                       </div>
                     </div>
 
-                    <div className="w-full bg-fuchsia-950/90 border border-fuchsia-400/80 rounded px-1.5 py-0.5 text-center shadow">
-                      <div className="text-[10px] font-black text-white truncate">
+                    <div className="relative z-10 mb-1 w-full bg-purple-950/90 border border-fuchsia-400/80 rounded-md px-2 py-1.5 text-center shadow">
+                      <div className="text-xs font-black text-white truncate">
                         {displayedVipItem.displayName}
                       </div>
-                      <div className="text-[8px] font-bold text-fuchsia-300 truncate">
+                      <div className="text-[9px] font-bold text-amber-300 truncate mt-0.5">
                         {displayedVipItem.actionText}
                       </div>
                     </div>
@@ -1163,138 +1224,233 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
             </div>
           )}
 
-          {/* 2. STUDIO TABLE / CABINET ("sobre una mesa, mueble", NO lamp & NO plant) */}
-          {!obsMode && (
-            <div
-              className="absolute inset-x-0 bottom-0 h-[285px]"
-              style={{
-                background: 'linear-gradient(180deg, #2D1C11 0%, #1F130B 100%)',
-              }}
-            >
-              {/* 3D Tabletop Surface ("Mesa / Mueble") */}
+          {/* 2. COMPACT HIGH-REALISM 3D "PHOTO PRINTER" AT THE BOTTOM (MATCHING USER REFERENCE SCREENSHOT, NO LOWER TRAYS) */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-[426px] z-30 w-[304px] flex flex-col items-center">
+            {/* Realistic Rear Top Paper Feeder Tray & Glossy Photo Paper Stack */}
+            <div className="relative w-[198px] h-[18px] -mb-1.5 shrink-0 rounded-t-lg bg-gradient-to-b from-neutral-800 to-neutral-950 border-t border-x border-neutral-600 shadow-inner flex items-end justify-center overflow-hidden">
+              {/* Left & Right Cyan Paper Guides */}
+              <span className="absolute left-3 bottom-0 w-2 h-3.5 bg-slate-600 rounded-t-xs border-t border-slate-400" />
+              <span className="absolute right-3 bottom-0 w-2 h-3.5 bg-slate-600 rounded-t-xs border-t border-slate-400" />
+              {/* Glossy Photo Paper Stack Loaded in Rear Tray */}
               <div
-                className="absolute left-1/2 -translate-x-1/2 top-0 w-[410px] h-[52px] rounded-t-2xl border-t-2 border-stone-200 shadow-lg"
+                className="w-[162px] h-[13px] rounded-t-[2px] border-t border-x border-stone-200 shadow-sm"
                 style={{
-                  background: 'linear-gradient(180deg, #F5F5F4 0%, #E7E5E4 65%, #D6D3D1 100%)',
+                  background: 'linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 65%, #CBD5E1 100%)',
                 }}
               />
-              {/* Tabletop Front Bevel Edge */}
-              <div className="absolute left-1/2 -translate-x-1/2 top-[48px] w-[416px] h-[14px] rounded-sm bg-stone-400 border-y border-stone-500 shadow-md" />
-
-              {/* Furniture Cabinet Body ("Mueble") beneath the tabletop */}
-              <div
-                className="absolute left-1/2 -translate-x-1/2 top-[62px] w-[392px] bottom-0 border-x-4 border-stone-400 shadow-2xl flex flex-col justify-between p-4"
-                style={{
-                  background: 'linear-gradient(180deg, #E7E5E4 0%, #D6D3D1 50%, #A8A29E 100%)',
-                }}
-              >
-                {/* Top Wide Drawer */}
-                <div className="w-full h-14 rounded-md bg-stone-200/90 border-2 border-stone-400/80 shadow-inner flex items-center justify-center">
-                  <div className="w-16 h-2 rounded-full bg-stone-500 shadow" />
-                </div>
-
-                {/* Bottom Two Cabinet Doors */}
-                <div className="w-full flex-1 mt-3 grid grid-cols-2 gap-3">
-                  <div className="rounded-md bg-stone-200/85 border-2 border-stone-400/80 shadow-inner flex items-center justify-end pr-3">
-                    <div className="w-2 h-10 rounded-full bg-stone-500 shadow" />
-                  </div>
-                  <div className="rounded-md bg-stone-200/85 border-2 border-stone-400/80 shadow-inner flex items-center justify-start pl-3">
-                    <div className="w-2 h-10 rounded-full bg-stone-500 shadow" />
-                  </div>
-                </div>
-              </div>
             </div>
-          )}
 
-          {/* 3. THE "ASURE PRINT" 3D DESKTOP COLOR PRINTER RESTING ON THE TABLE/CABINET */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-[210px] z-30 w-[290px] flex flex-col items-center">
-            {/* Printer Top Slanted Cover with "ASURE PRINT" Branding */}
+            {/* Printer Top Slanted Scanner/Feeder Cover with Metallic Bevel & "PHOTO PRINTER" Emblem */}
             <div
-              className="relative w-[276px] h-[52px] rounded-t-xl border-t-2 border-x border-stone-300 shadow-md flex items-center justify-between px-4"
+              className="relative w-[288px] h-[54px] shrink-0 rounded-t-2xl border-t-2 border-x border-stone-200 shadow-[0_6px_16px_rgba(0,0,0,0.35)] flex items-center justify-between px-3.5 overflow-hidden"
               style={{
-                background: 'linear-gradient(180deg, #F5F2EB 0%, #DFD9CE 100%)',
-                transform: 'perspective(500px) rotateX(18deg)',
+                background:
+                  'linear-gradient(180deg, #FAF8F5 0%, #EAE4DC 48%, #D6CFC2 88%, #B8B0A2 100%)',
+                transform: 'perspective(520px) rotateX(16deg)',
               }}
             >
-              {/* Left Status LEDs (Green & Red) */}
-              <div className="flex items-center gap-1.5">
+              {/* Top Specular Highlight Strip */}
+              <div className="absolute inset-x-3 top-0.5 h-[2px] rounded-full bg-white/90 pointer-events-none" />
+
+              {/* Left Recessed Power & Status Cluster */}
+              <div className="flex items-center gap-2 bg-stone-800/90 px-2.5 py-1 rounded-full border border-stone-400/60 shadow-inner shrink-0">
+                {/* Illuminated Power Button */}
                 <span
-                  className={`w-2.5 h-2.5 rounded-full border border-emerald-900 ${
+                  className={`w-3 h-3 rounded-full border flex items-center justify-center ${
                     activeDonor && cyclePhase === 'printing'
-                      ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-ping'
-                      : 'bg-emerald-500 shadow-[0_0_6px_#10b981]'
+                      ? 'bg-emerald-400 border-emerald-200 shadow-[0_0_10px_#34d399] animate-pulse'
+                      : 'bg-emerald-500 border-emerald-200 shadow-[0_0_6px_#10b981]'
+                  }`}
+                >
+                  <span className="w-1 h-1 rounded-full bg-white" />
+                </span>
+                {/* Wi-Fi LED */}
+                <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_5px_#22d3ee]" />
+                {/* Ready/Busy Amber LED */}
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    activeDonor && cyclePhase === 'printing'
+                      ? 'bg-amber-400 shadow-[0_0_6px_#fbbf24] animate-ping'
+                      : 'bg-rose-500/80'
                   }`}
                 />
-                <span className="w-2 h-2 rounded-full bg-rose-500/80 border border-rose-900" />
               </div>
 
-              {/* Center "ASURE PRINT" Logo */}
-              <div className="flex items-center gap-1.5 bg-stone-200/75 px-3 py-1 rounded border border-stone-300/80 shadow-inner">
-                <div className="relative w-4 h-4 flex items-center justify-center">
-                  <span className="absolute w-3 h-3 rotate-45 bg-blue-700 rounded-[2px]" />
-                  <span className="relative w-1.5 h-1.5 rotate-45 bg-red-500" />
+              {/* Center Brushed Metallic "PHOTO PRINTER" Badge Plate */}
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-stone-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_4px_rgba(0,0,0,0.2)]"
+                style={{
+                  background:
+                    'linear-gradient(135deg, #E7E5E4 0%, #FFFFFF 45%, #D6D3D1 70%, #F5F5F4 100%)',
+                }}
+              >
+                <div className="relative w-3.5 h-3.5 flex items-center justify-center shrink-0">
+                  <span className="absolute w-3 h-3 rotate-45 bg-gradient-to-br from-blue-600 to-indigo-900 rounded-[2px] shadow-xs" />
+                  <span className="relative w-1.5 h-1.5 rotate-45 bg-gradient-to-br from-rose-400 to-red-600" />
                 </div>
-                <span className="text-[13px] font-black tracking-wider text-slate-900">
-                  ASURE PRINT
+                <span className="text-[10.5px] font-black tracking-wide text-slate-900 uppercase whitespace-nowrap drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                  PHOTO PRINTER
                 </span>
               </div>
 
-              {/* Right Physical Buttons (Blue & Yellow) */}
-              <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-amber-400 border border-amber-700 shadow-inner" />
-                <span className="w-3 h-3 rounded-full bg-blue-600 border border-blue-900 shadow-inner" />
+              {/* Right 3D Tactile Control Buttons */}
+              <div className="flex items-center gap-1.5 bg-stone-300/80 px-2 py-1 rounded-full border border-stone-400/70 shadow-inner shrink-0">
+                <span
+                  className="w-3.5 h-3.5 rounded-full border border-amber-700 shadow"
+                  style={{
+                    background: 'radial-gradient(circle at 35% 30%, #FDE047 0%, #D97706 100%)',
+                  }}
+                />
+                <span
+                  className="w-3.5 h-3.5 rounded-full border border-blue-900 shadow"
+                  style={{
+                    background: 'radial-gradient(circle at 35% 30%, #60A5FA 0%, #1D4ED8 100%)',
+                  }}
+                />
               </div>
             </div>
 
-            {/* Printer Main Front Body + Blue LCD Panel (NO prompt message like "Sigue o dona Rosa") */}
+            {/* Metallic Chrome Seam Strip between Scanner Lid and Main Body */}
             <div
-              className="relative -mt-1 w-[290px] h-[108px] rounded-b-xl border-x-2 border-b-4 border-stone-400 shadow-2xl flex flex-col items-center justify-between pt-2 pb-2 px-3"
+              className="relative z-10 -mt-1 w-[296px] h-[5px] shrink-0 rounded-xs border-y border-stone-500/80 shadow-sm"
               style={{
-                background: 'linear-gradient(180deg, #E6E1D6 0%, #CFC8B8 60%, #B8B09F 100%)',
+                background:
+                  'linear-gradient(90deg, #78716C 0%, #E7E5E4 25%, #FFFFFF 50%, #E7E5E4 75%, #78716C 100%)',
+              }}
+            />
+
+            {/* Printer Upper Engine Body + CMYK Ink Tanks + Glass LCD Panel */}
+            <div
+              className="relative z-20 w-[304px] h-[112px] shrink-0 border-x-2 border-b-2 border-stone-500 shadow-[0_8px_18px_rgba(0,0,0,0.45)] flex items-center justify-between pt-2 pb-2.5 px-2.5"
+              style={{
+                background:
+                  'linear-gradient(180deg, #EAE5DB 0%, #D6CFC2 52%, #BDB4A4 85%, #9E9585 100%)',
               }}
             >
-              {/* Dark Recessed Center Bay housing the Blue LCD Screen and Output Slot */}
-              <div className="w-[238px] h-full rounded-lg bg-neutral-900 border-2 border-stone-500 shadow-inner flex flex-col items-center justify-between p-2">
-                {/* Glowing Blue LCD Display - Clean, no idle promotional message */}
+              {/* Left Molded Side Grip & Ventilation Louvers */}
+              <div className="w-[26px] h-full flex flex-col items-center justify-between py-1.5">
+                <div className="w-full flex flex-col gap-1 px-0.5">
+                  <span className="w-full h-[3px] rounded-full bg-stone-600/70 shadow-inner" />
+                  <span className="w-full h-[3px] rounded-full bg-stone-600/70 shadow-inner" />
+                  <span className="w-full h-[3px] rounded-full bg-stone-600/70 shadow-inner" />
+                  <span className="w-full h-[3px] rounded-full bg-stone-600/70 shadow-inner" />
+                </div>
+                <div className="rounded bg-stone-800 px-1 py-0.5 border border-stone-400/60 shadow-inner">
+                  <span className="block text-[5px] font-black tracking-tighter text-amber-300 leading-none">
+                    HD-INK
+                  </span>
+                </div>
+              </div>
+
+              {/* Dark Carbon Recessed Center Bay housing the Glass Blue LCD Screen and Roller Output Slot */}
+              <div
+                className="w-[210px] h-full rounded-xl border-2 border-stone-600 shadow-[inset_0_3px_8px_rgba(0,0,0,0.9)] flex flex-col items-center justify-between p-2"
+                style={{
+                  background: 'linear-gradient(180deg, #171717 0%, #0A0A0A 100%)',
+                }}
+              >
+                {/* Glowing Blue LCD Display with Glass Reflection Overlay (No idle promotional text) */}
                 <div
-                  className="w-[185px] rounded border border-cyan-300/70 px-2.5 py-1.5 shadow-[0_0_15px_rgba(37,99,235,0.75)] text-white"
+                  className="relative w-[184px] rounded-md border border-cyan-300/80 px-2.5 py-1.5 shadow-[0_0_16px_rgba(37,99,235,0.8),inset_0_1px_4px_rgba(255,255,255,0.35)] text-white overflow-hidden"
                   style={{
-                    background: 'linear-gradient(180deg, #1D4ED8 0%, #1E3A8A 100%)',
+                    background: 'linear-gradient(180deg, #1D4ED8 0%, #1E3A8A 65%, #172554 100%)',
                   }}
                 >
-                  <div className="flex items-center justify-between text-[9px] font-bold text-cyan-200 h-3.5">
-                    <span className="truncate max-w-[130px] text-white font-black">
+                  {/* Realistic Diagonal Glass Screen Glare */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background:
+                        'linear-gradient(125deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 38%, transparent 42%)',
+                    }}
+                  />
+
+                  <div className="relative flex items-center justify-between text-[9px] font-bold text-cyan-200 h-3.5">
+                    <span className="truncate max-w-[128px] text-white font-black drop-shadow">
                       {activeDonor ? activeDonor.displayName || activeDonor.username : ''}
                     </span>
-                    <span className="font-mono">
+                    <span className="font-mono text-cyan-200">
                       {activeDonor ? `${Math.round(printProgress * 100)}%` : ''}
                     </span>
                   </div>
 
                   {/* Progress Bar on LCD */}
-                  <div className="mt-1.5 h-1.5 w-full rounded-full bg-blue-950 overflow-hidden">
+                  <div className="relative mt-1.5 h-1.5 w-full rounded-full bg-slate-950/90 border border-cyan-500/30 overflow-hidden">
                     <div
-                      className="h-full bg-cyan-300 transition-all duration-75"
+                      className="h-full bg-gradient-to-r from-cyan-300 via-sky-200 to-white transition-all duration-75"
                       style={{
                         width: `${activeDonor ? Math.max(8, Math.round(printProgress * 100)) : 0}%`,
                       }}
                     />
                   </div>
 
-                  <div className="mt-1.5 flex items-center justify-between text-[8px] font-mono text-cyan-100/90">
+                  <div className="relative mt-1.5 flex items-center justify-between text-[8px] font-mono text-cyan-100/90">
                     <span>Impresas: {printedCount}</span>
                     <span>En cola: {queueCount}</span>
                   </div>
                 </div>
 
-                {/* Dark Paper Output Slot */}
-                <div className="w-[205px] h-3 rounded-full bg-black border-t border-neutral-700 shadow-inner" />
+                {/* Realistic Paper Output Bay with Metallic Feed Rollers */}
+                <div className="relative w-[196px] h-3.5 rounded-full bg-black border-t border-neutral-600 shadow-inner flex items-center justify-evenly px-3 overflow-hidden">
+                  <span className="w-5 h-1.5 rounded-xs bg-gradient-to-b from-stone-300 to-stone-600 opacity-75" />
+                  <span className="w-5 h-1.5 rounded-xs bg-gradient-to-b from-stone-300 to-stone-600 opacity-75" />
+                  <span className="w-5 h-1.5 rounded-xs bg-gradient-to-b from-stone-300 to-stone-600 opacity-75" />
+                  <span className="w-5 h-1.5 rounded-xs bg-gradient-to-b from-stone-300 to-stone-600 opacity-75" />
+                </div>
+              </div>
+
+              {/* Right Recessed CMYK Ink Tank Level Windows (Realistic EcoTank Photo Printer Window) */}
+              <div className="w-[34px] h-full rounded-lg bg-neutral-900/95 border border-stone-600 p-1 flex flex-col justify-between shadow-inner">
+                <span className="text-[5px] font-black text-center text-stone-300 tracking-wider uppercase">
+                  CMYK
+                </span>
+                <div className="flex-1 my-0.5 grid grid-cols-4 gap-0.5 items-end bg-neutral-950 p-0.5 rounded border border-neutral-800">
+                  {/* Cyan Tank */}
+                  <div className="w-full h-full bg-neutral-800 rounded-xs overflow-hidden flex items-end">
+                    <div className="w-full h-[85%] bg-gradient-to-t from-cyan-600 to-cyan-300" />
+                  </div>
+                  {/* Magenta Tank */}
+                  <div className="w-full h-full bg-neutral-800 rounded-xs overflow-hidden flex items-end">
+                    <div className="w-full h-[78%] bg-gradient-to-t from-pink-600 to-rose-400" />
+                  </div>
+                  {/* Yellow Tank */}
+                  <div className="w-full h-full bg-neutral-800 rounded-xs overflow-hidden flex items-end">
+                    <div className="w-full h-[90%] bg-gradient-to-t from-amber-500 to-yellow-300" />
+                  </div>
+                  {/* Black Tank */}
+                  <div className="w-full h-full bg-neutral-800 rounded-xs overflow-hidden flex items-end">
+                    <div className="w-full h-[92%] bg-gradient-to-t from-slate-900 to-slate-500" />
+                  </div>
+                </div>
+                <span className="text-[4.5px] font-mono text-center text-emerald-400 leading-none">
+                  READY
+                </span>
               </div>
             </div>
 
-            {/* 4. SINGLE PHOTO SHEET SLIDING COMPLETELY OUT OF THE PRINTER SLOT & FLYING TO ITS WALL POSITION */}
+            {/* Compact Output Tray Base Lip (Only the top output bar shown in the user's photo, no lower trays) */}
             <div
-              className="relative -mt-3.5 z-40 flex flex-col items-center pointer-events-none"
+              className="relative z-10 w-[298px] h-[28px] rounded-b-xl border-x-2 border-b-2 border-stone-600 shadow-[0_12px_24px_rgba(0,0,0,0.85)] flex items-center justify-center px-2"
+              style={{
+                background: 'linear-gradient(180deg, #D6CFC2 0%, #ACA395 100%)',
+              }}
+            >
+              <div className="w-full h-[20px] rounded-md bg-gradient-to-b from-neutral-900 via-neutral-800 to-neutral-900 border border-stone-600 shadow-inner flex items-center justify-between px-4">
+                <span className="text-[6px] font-mono font-bold text-stone-400 tracking-widest uppercase">
+                  OUTPUT TRAY
+                </span>
+                <div className="flex items-center gap-3">
+                  <span className="w-6 h-1 rounded-full bg-stone-600" />
+                  <span className="w-6 h-1 rounded-full bg-stone-600" />
+                  <span className="w-6 h-1 rounded-full bg-stone-600" />
+                </div>
+                <span className="text-[6px] font-mono font-bold text-cyan-400">AUTO-FEED</span>
+              </div>
+            </div>
+
+            {/* 3. SINGLE PHOTO SHEET SLIDING COMPLETELY OUT OF THE PRINTER SLOT & FLYING TO ITS ENLARGED WALL POSITION */}
+            <div
+              className="absolute top-[168px] left-1/2 -translate-x-1/2 z-40 flex flex-col items-center pointer-events-none"
               style={{
                 perspective: '700px',
               }}
@@ -1309,7 +1465,7 @@ export const ColorPhotoPrinter: React.FC<ColorPhotoPrinterProps> = ({
                         ? {
                             x: currentFlightTarget.x,
                             y: currentFlightTarget.y,
-                            scale: activeDonor.frameTier === 'frame_mythic' ? 0.68 : 0.4,
+                            scale: activeDonor.frameTier === 'frame_mythic' ? 0.78 : 0.48,
                             rotateX: 0,
                             opacity: [1, 1, 0.92],
                           }

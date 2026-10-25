@@ -12,20 +12,48 @@ const __dirname = path.dirname(__filename);
 const PORT = 3000;
 
 interface TikTokLiveState {
+  appId: string;
   isConnected: boolean;
   username: string;
   roomInfo: any;
   lastError: string | null;
 }
 
-let liveState: TikTokLiveState = {
-  isConnected: false,
-  username: '',
-  roomInfo: null,
-  lastError: null,
-};
+interface AppTikTokSession {
+  liveState: TikTokLiveState;
+  tiktokConnection: any;
+  sseClients: Response[];
+}
 
-let tiktokConnection: any = null;
+const appSessions = new Map<string, AppTikTokSession>();
+
+function normalizeAppId(rawAppId: unknown): string {
+  const id = String(rawAppId || 'printer').trim();
+  if (id === 'color_printer' || id === 'soccer' || id === 'cr7' || id === 'printer') {
+    return id;
+  }
+  return 'printer';
+}
+
+function getAppSession(rawAppId: unknown): AppTikTokSession {
+  const appId = normalizeAppId(rawAppId);
+  let session = appSessions.get(appId);
+  if (!session) {
+    session = {
+      liveState: {
+        appId,
+        isConnected: false,
+        username: '',
+        roomInfo: null,
+        lastError: null,
+      },
+      tiktokConnection: null,
+      sseClients: [],
+    };
+    appSessions.set(appId, session);
+  }
+  return session;
+}
 
 // Settings chosen in the panel that the OBS overlay must also use (print triggers, plotter sound)
 // Persisted to disk so a server restart does not fall back to the default triggers
@@ -38,9 +66,8 @@ try {
 } catch {
   sharedSettings = {};
 }
-const sseClients: Response[] = [];
 
-// Broadcast an event to all connected SSE browser clients (console + OBS overlays)
+// Broadcast an event to all connected SSE browser clients for a specific appId
 // Profile photo URL across legacy (profilePictureUrl) and v2 proto (avatarThumb.urlList) user shapes
 function getAvatarUrl(u: any, data: any): string {
   return (
@@ -56,14 +83,21 @@ function getAvatarUrl(u: any, data: any): string {
   );
 }
 
-function broadcastSSE(type: string, data: any) {
-  const payload = `data: ${JSON.stringify({ type, data })}\n\n`;
-  for (let i = sseClients.length - 1; i >= 0; i--) {
+function broadcastSSE(appId: string, type: string, data: any) {
+  const session = getAppSession(appId);
+  const payload = `data: ${JSON.stringify({ appId: session.liveState.appId, type, data })}\n\n`;
+  for (let i = session.sseClients.length - 1; i >= 0; i--) {
     try {
-      sseClients[i].write(payload);
+      session.sseClients[i].write(payload);
     } catch {
-      sseClients.splice(i, 1);
+      session.sseClients.splice(i, 1);
     }
+  }
+}
+
+function broadcastSharedSettingsToAllApps(data: any) {
+  for (const [appId] of appSessions.entries()) {
+    broadcastSSE(appId, 'shared-settings', data);
   }
 }
 
@@ -149,33 +183,38 @@ async function startServer() {
     }
   });
 
-  // 2. Server-Sent Events (SSE) stream for real-time live events to frontend & OBS
+  // 2. Server-Sent Events (SSE) stream scoped per app (?app=printer | color_printer | soccer | cr7)
   app.get('/api/tiktok/stream', (req: Request, res: Response) => {
+    const appId = normalizeAppId(req.query.app);
+    const session = getAppSession(appId);
+
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.flushHeaders?.();
 
-    sseClients.push(res);
+    session.sseClients.push(res);
 
-    // Send immediate initial status
+    // Send immediate initial status for this specific app
     res.write(
       `data: ${JSON.stringify({
+        appId,
         type: 'status',
-        data: liveState,
+        data: session.liveState,
       })}\n\n`
     );
 
     req.on('close', () => {
-      const idx = sseClients.indexOf(res);
-      if (idx !== -1) sseClients.splice(idx, 1);
+      const idx = session.sseClients.indexOf(res);
+      if (idx !== -1) session.sseClients.splice(idx, 1);
     });
   });
 
-  // 3. Status endpoint
-  app.get('/api/tiktok/status', (_req: Request, res: Response) => {
-    res.json(liveState);
+  // 3. Status endpoint per app
+  app.get('/api/tiktok/status', (req: Request, res: Response) => {
+    const appId = normalizeAppId(req.query.app);
+    res.json(getAppSession(appId).liveState);
   });
 
   // Shared settings (print triggers, plotter sound), synced between panel and overlay
@@ -190,13 +229,16 @@ async function startServer() {
     } catch (err) {
       console.error('No se pudo guardar shared-settings.json', err);
     }
-    broadcastSSE('shared-settings', sharedSettings);
+    broadcastSharedSettingsToAllApps(sharedSettings);
     res.json({ success: true });
   });
 
-  // 4. Connect to TikTok Live
+  // 4. Connect to TikTok Live independently for the requested appId
   app.post('/api/tiktok/connect', async (req: Request, res: Response) => {
-    let { username } = req.body;
+    let { username, appId: rawAppId } = req.body;
+    const appId = normalizeAppId(rawAppId || req.query.app);
+    const session = getAppSession(appId);
+
     if (!username) {
       return res.status(400).json({ success: false, error: 'Username is required' });
     }
@@ -204,63 +246,65 @@ async function startServer() {
     username = username.replace(/^@/, '').trim();
 
     try {
-      // Disconnect existing connection if any
-      if (tiktokConnection) {
+      // Disconnect existing connection for THIS appId if any
+      if (session.tiktokConnection) {
         try {
-          tiktokConnection.disconnect();
+          session.tiktokConnection.disconnect();
         } catch {}
-        tiktokConnection = null;
+        session.tiktokConnection = null;
       }
 
-      liveState = {
+      session.liveState = {
+        appId,
         isConnected: false,
         username,
         roomInfo: null,
         lastError: null,
       };
-      broadcastSSE('status', liveState);
+      broadcastSSE(appId, 'status', session.liveState);
 
       const conn: any = new TikTokLiveConnection(username, {
         processInitialData: false,
-        // enableExtendedGiftInfo fetches gift/list/ through a signed EulerStream request,
-        // which requires a paid Business plan. Gift events still include name/diamonds.
         enableExtendedGiftInfo: false,
         ...(process.env.SIGN_API_KEY ? { signApiKey: process.env.SIGN_API_KEY } : {}),
       });
 
       conn.on('connected', (state: any) => {
-        liveState = {
+        session.liveState = {
+          appId,
           isConnected: true,
           username,
           roomInfo: state?.roomInfo || { title: `Live de @${username}` },
           lastError: null,
         };
-        broadcastSSE('connected', liveState);
+        broadcastSSE(appId, 'connected', session.liveState);
       });
 
       conn.on('disconnected', () => {
-        liveState = {
+        session.liveState = {
+          appId,
           isConnected: false,
           username,
           roomInfo: null,
           lastError: null,
         };
-        broadcastSSE('disconnected', liveState);
+        broadcastSSE(appId, 'disconnected', session.liveState);
       });
 
       conn.on('streamEnd', () => {
-        liveState = {
+        session.liveState = {
+          appId,
           isConnected: false,
           username,
           roomInfo: null,
           lastError: 'La transmisión en vivo de TikTok ha finalizado.',
         };
-        broadcastSSE('disconnected', liveState);
+        broadcastSSE(appId, 'disconnected', session.liveState);
       });
 
       conn.on('error', (err: any) => {
-        liveState.lastError = err?.message || 'Error en la conexión con TikTok Live';
-        broadcastSSE('error', { error: liveState.lastError });
+        session.liveState.lastError = err?.message || 'Error en la conexión con TikTok Live';
+        broadcastSSE(appId, 'error', { error: session.liveState.lastError });
       });
 
       // Capture live chat messages for team voting, user affiliation & "yo" detection
@@ -286,7 +330,7 @@ async function startServer() {
           isYo,
         };
 
-        broadcastSSE('chat', chatEvent);
+        broadcastSSE(appId, 'chat', chatEvent);
       });
 
       // Capture viewers joining the live (used to print their profile photo)
@@ -306,7 +350,7 @@ async function startServer() {
           timestamp: Date.now(),
         };
 
-        broadcastSSE('member', memberEvent);
+        broadcastSSE(appId, 'member', memberEvent);
       });
 
       // Capture real TikTok Live follows ("sigue al creador LIVE")
@@ -331,8 +375,8 @@ async function startServer() {
           timestamp: Date.now(),
         };
 
-        console.log(`[TikTok Live FOLLOW] @${followEvent.username} siguió al creador`);
-        broadcastSSE('follow', followEvent);
+        console.log(`[TikTok Live FOLLOW] [${appId}] @${followEvent.username} siguió al creador`);
+        broadcastSSE(appId, 'follow', followEvent);
       };
 
       conn.on(WebcastEvent.FOLLOW || 'follow', (data: any) => {
@@ -365,15 +409,15 @@ async function startServer() {
           timestamp: Date.now(),
         };
 
-        broadcastSSE('like', likeEvent);
+        broadcastSSE(appId, 'like', likeEvent);
       });
 
       // Map to buffer and resolve gift streaks so single gifts and combos never get lost
       const activeStreaks = new Map<string, { timer: NodeJS.Timeout; event: any }>();
 
       const dispatchGift = (giftEvent: any) => {
-        console.log(`[TikTok Live GIFT] De @${giftEvent.username}: ${giftEvent.giftName} (x${giftEvent.repeatCount}) [${giftEvent.giftTier}]`);
-        broadcastSSE('gift', giftEvent);
+        console.log(`[TikTok Live GIFT] [${appId}] De @${giftEvent.username}: ${giftEvent.giftName} (x${giftEvent.repeatCount}) [${giftEvent.giftTier}]`);
+        broadcastSSE(appId, 'gift', giftEvent);
       };
 
       // Capture real TikTok Live gifts!
@@ -431,54 +475,58 @@ async function startServer() {
         }
       });
 
-      tiktokConnection = conn;
+      session.tiktokConnection = conn;
       const state = await conn.connect();
 
-      liveState = {
+      session.liveState = {
+        appId,
         isConnected: true,
         username,
         roomInfo: state?.roomInfo || { title: `Live de @${username}` },
         lastError: null,
       };
-      broadcastSSE('status', liveState);
+      broadcastSSE(appId, 'status', session.liveState);
 
-      return res.json({ success: true, liveState });
+      return res.json({ success: true, liveState: session.liveState });
     } catch (err: any) {
-      liveState = {
+      session.liveState = {
+        appId,
         isConnected: false,
         username,
         roomInfo: null,
         lastError: err?.message || 'No se pudo conectar a TikTok Live. Verifica que el usuario esté transmitiendo en vivo.',
       };
-      broadcastSSE('status', liveState);
+      broadcastSSE(appId, 'status', session.liveState);
 
       return res.status(500).json({
         success: false,
-        error: liveState.lastError,
+        error: session.liveState.lastError,
       });
     }
   });
 
+  // 5. Disconnect from TikTok Live independently for the requested appId
+  app.post('/api/tiktok/disconnect', (req: Request, res: Response) => {
+    const appId = normalizeAppId(req.body?.appId || req.query.app);
+    const session = getAppSession(appId);
 
-
-  // 5. Disconnect from TikTok Live
-  app.post('/api/tiktok/disconnect', (_req: Request, res: Response) => {
-    if (tiktokConnection) {
+    if (session.tiktokConnection) {
       try {
-        tiktokConnection.disconnect();
+        session.tiktokConnection.disconnect();
       } catch {}
-      tiktokConnection = null;
+      session.tiktokConnection = null;
     }
 
-    liveState = {
+    session.liveState = {
+      appId,
       isConnected: false,
       username: '',
       roomInfo: null,
       lastError: null,
     };
-    broadcastSSE('disconnected', liveState);
+    broadcastSSE(appId, 'disconnected', session.liveState);
 
-    return res.json({ success: true });
+    return res.json({ success: true, appId });
   });
 
   // 6. Vite middleware for frontend SPA in development mode
